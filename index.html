@@ -426,106 +426,61 @@
   </style>
   <!-- Zeabur PostgreSQL adapter (no external SDK required) -->
   <script>
-  // ---------------------------------------------------------------------------
-  // Zeabur PostgreSQL REST adapter
-  // ---------------------------------------------------------------------------
-  // This adapter replaces Supabase with a lightweight fetch-based client that
-  // calls your own backend API running on Zeabur.
-  //
-  // SETUP — point these two constants at your Zeabur service:
-  //
-  //   API_BASE  : the public URL of your Zeabur backend, e.g.
-  //               'https://my-api.zeabur.app'
-  //               The backend must expose:
-  //                 GET  /store/:doc_id          → { data: <jsonb> } | null
-  //                 POST /store/:doc_id           → { ok: true }      (upsert)
-  //                 POST /store/:doc_id/merge     → { ok: true }      (deep-merge upsert)
-  //               (See the companion server.js in this repo for a ready-made
-  //                Express + pg implementation.)
-  //
-  //   API_KEY   : a shared secret your backend checks in the
-  //               'x-api-key' header.  Set this in your Zeabur env vars too.
-  //               Leave as empty string '' to disable auth during local dev.
-  //
-  // TABLE / MAIN_DOC match the old Supabase schema so no data migration is
-  // needed if you dump-and-restore the netiva_store table.
-  // ---------------------------------------------------------------------------
-
   window.addEventListener('DOMContentLoaded', function(){
 
-    const API_BASE  = 'https://YOUR-ZEABUR-BACKEND.zeabur.app'; // ← replace
-    const API_KEY   = '';                                         // ← replace
-    const TABLE     = 'netiva_store';   // kept for reference / server-side use
+    const API_BASE  = 'https://netiva-2.zeabur.app';
+    const API_KEY   = 'netiva-secret-2026';
+    const TABLE     = 'netiva_store';
     const MAIN_DOC  = 'shopdata';
 
-    // Shared headers
-    function _headers(extra){
-      const h = { 'Content-Type': 'application/json' };
-      if(API_KEY) h['x-api-key'] = API_KEY;
-      return Object.assign(h, extra || {});
+    function _headers(){
+      return { 'Content-Type': 'application/json', 'x-api-key': API_KEY };
     }
 
-    // doc() — mirrors Firestore's doc(db, collection, id)
     function zbDoc(fsdb_unused, collection_unused, docId){
       return { _table: TABLE, _id: docId };
     }
 
-    // getDoc(ref) — returns a Firestore-like snapshot
     async function zbGetDoc(ref){
       try{
         const res = await fetch(API_BASE+'/store/'+encodeURIComponent(ref._id), {
-          method: 'GET',
-          headers: _headers()
+          method: 'GET', headers: _headers()
         });
-        if(res.status === 404){
-          return { exists: ()=> false, data: ()=> null };
-        }
-        if(!res.ok){ throw new Error('getDoc HTTP '+res.status); }
+        if(res.status === 404) return { exists: ()=> false, data: ()=> null };
+        if(!res.ok) throw new Error('getDoc HTTP '+res.status);
         const body = await res.json();
         const rowData = body && body.data !== undefined ? body.data : null;
-        console.log('Zeabur getDoc:', ref._id);
         return { exists: ()=> rowData !== null, data: ()=> rowData };
       }catch(e){ console.error('Zeabur getDoc error ('+ref._id+'):', e); throw e; }
     }
 
-    // setDoc(ref, payload, {merge}) — upserts the row
     async function zbSetDoc(ref, payload, opts){
       try{
         const endpoint = opts && opts.merge
           ? API_BASE+'/store/'+encodeURIComponent(ref._id)+'/merge'
           : API_BASE+'/store/'+encodeURIComponent(ref._id);
         const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: _headers(),
+          method: 'POST', headers: _headers(),
           body: JSON.stringify({ data: payload })
         });
-        if(!res.ok){ throw new Error('setDoc HTTP '+res.status); }
+        if(!res.ok) throw new Error('setDoc HTTP '+res.status);
         console.log('Zeabur saved:', ref._id);
       }catch(e){ console.error('Zeabur setDoc error ('+ref._id+'):', e); throw e; }
     }
 
-    // onSnapshot(ref, callback) — polling-based (Zeabur PostgreSQL has no
-    // built-in realtime push; swap to SSE/WebSocket on the server if needed)
     const _snapPolls = {};
     function zbOnSnapshot(ref, callback){
       const key = ref._id;
-      if(_snapPolls[key]) return; // already watching
-
-      // Fire immediately
+      if(_snapPolls[key]) return;
       zbGetDoc(ref).then(snap=>{ if(snap.exists()) callback(snap); }).catch(()=>{});
-
-      // Poll every 5 s
       _snapPolls[key] = setInterval(async ()=>{
-        try{
-          const snap = await zbGetDoc(ref);
-          callback(snap);
-        }catch(e){ console.warn('Zeabur poll error ('+key+'):', e); }
+        try{ const snap = await zbGetDoc(ref); callback(snap); }
+        catch(e){ console.warn('Zeabur poll error ('+key+'):', e); }
       }, 5000);
     }
 
-    // Wire up window._fb and boot
     const storeDocRef = zbDoc(null, null, MAIN_DOC);
-    window._fb.fsdb       = null;          // no raw client exposed
+    window._fb.fsdb       = null;
     window._fb.storeDoc   = storeDocRef;
     window._fb.setDoc     = zbSetDoc;
     window._fb.getDoc     = zbGetDoc;
