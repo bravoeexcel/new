@@ -857,24 +857,24 @@ const DB_DEFAULTS = {
 
 let db = {...DB_DEFAULTS, products:[...DEFAULT_PRODS]};
 
-// ── Per-session state (never synced to Supabase) ──────────────────────────
+// ── Per-session state (local only) ──────────────────────────────────────────
 // db.cur (logged-in user), db.adm (admin flag) stay local per session only.
 // Everything else (products, referrers, users, adminEmail/Password, heroImage,
-// heroTextTitle, heroTextSub, feeRate) is synced globally via Supabase.
+// heroTextTitle, heroTextSub, feeRate) is synced globally via Zeabur PostgreSQL.
 
 const SYNC_KEYS = ['products','referrers','users','adminEmail','adminPassword',
   'adminCreated','heroTextTitle','heroTextSub','feeRate'];
-// Image-only keys stored in a separate Supabase row to keep the main
+// Image-only keys stored in a separate Zeabur row to keep the main
 // doc small and fast. heroImage + per-product imgs arrays live here.
 const IMG_DOC_KEY = 'netiva_images';
 
 let _svPending = false;
 let _fbReady = false;
-// Supabase adapter references — populated by the inline script above
+// Zeabur adapter references — populated by the inline script above
 window._fb = { fsdb:null, storeDoc:null, setDoc:null, getDoc:null, onSnapshot:null, doc:null };
 const _fb = window._fb;
 
-// ── Image storage: one Supabase row per product, one for hero, one per referrer ──
+// ── Image storage: one Zeabur row per product, one for hero, one per referrer ──
 // netiva_store row 'hero'      → data: { heroImage: '...' }
 // netiva_store row 'img_p1'    → data: { imgs: [...base64...] }
 // netiva_store row 'img_p2'    → data: { imgs: [...base64...] }
@@ -961,7 +961,7 @@ function _buildLocalImgCache(){
 
 // ── Dirty-doc tracking ───────────────────────────────────────────────────────
 // Instead of re-uploading every row on every sv() call, we track exactly which
-// Supabase rows have pending changes and flush only those.
+// Zeabur rows have pending changes and flush only those.
 const _dirtyDocs={}; // docId -> payload to write
 let _flushTimer=null;
 
@@ -970,7 +970,7 @@ function _markDirty(docId, payload){
   _dirtyDocs[docId]=payload;
 }
 
-// Flush all dirty docs to Firestore immediately (no delay).
+// Flush all dirty docs to Zeabur immediately (no delay).
 async function _flushDirty(){
   if(_flushTimer){ clearTimeout(_flushTimer); _flushTimer=null; }
   if(typeof _fb?.setDoc !== 'function') return;
@@ -984,10 +984,10 @@ async function _flushDirty(){
       if(id==='__main__'){
         await _fb.setDoc(_fb.storeDoc, _buildMainPayload(), {merge:true});
       } else {
-        const ref=_fb.doc(_fb.fsdb,'netiva',id);
+        const ref=_fb.doc(null, null, id);
         await _fb.setDoc(ref, toWrite[id], {merge:true});
       }
-    }catch(e){ console.warn('Supabase write failed ('+id+'):',e); }
+    }catch(e){ console.warn('Zeabur write failed ('+id+'):',e); }
   }));
 }
 
@@ -1074,49 +1074,49 @@ function _debouncedRender(){
 
 // Register onSnapshot listeners for a product doc that didn't exist at boot time
 function _attachProdListeners(prod){
-  if(!_fb.onSnapshot||!_fb.fsdb) return;
+  if(!_fb.onSnapshot) return;
   const imgDocId='img_'+prod.id;
   const txtDocId='text_'+prod.id;
   if(!_liveListeners.has(imgDocId)){
     _liveListeners.add(imgDocId);
     try{
-      const ref=_fb.doc(_fb.fsdb,'netiva',imgDocId);
+      const ref=_fb.doc(null, null, imgDocId);
       _fb.onSnapshot(ref,(snap)=>{
         if(!snap.exists()) return;
         _applyProdImgDoc(prod.id,snap.data());
         try{localStorage.setItem(IMG_DOC_KEY,JSON.stringify(_buildLocalImgCache()));}catch(e){}
         if(!db.adm){_debouncedRender();}
       });
-    }catch(e){console.warn('Supabase listener attach failed for '+imgDocId,e);}
+    }catch(e){console.warn('Zeabur listener attach failed for '+imgDocId,e);}
   }
   if(!_liveListeners.has(txtDocId)){
     _liveListeners.add(txtDocId);
     try{
-      const ref=_fb.doc(_fb.fsdb,'netiva',txtDocId);
+      const ref=_fb.doc(null, null, txtDocId);
       _fb.onSnapshot(ref,(snap)=>{
         if(!snap.exists()) return;
         _applyProdTextDoc(prod.id,snap.data());
         _debouncedRender();
       });
-    }catch(e){console.warn('Supabase listener attach failed for '+txtDocId,e);}
+    }catch(e){console.warn('Zeabur listener attach failed for '+txtDocId,e);}
   }
 }
 
 // Register onSnapshot listener for a referrer QR doc
 function _attachRefListener(ref){
-  if(!_fb.onSnapshot||!_fb.fsdb) return;
+  if(!_fb.onSnapshot) return;
   const docId='ref_'+ref.id;
   if(_liveListeners.has(docId)) return;
   _liveListeners.add(docId);
   try{
-    const docRef=_fb.doc(_fb.fsdb,'netiva',docId);
+    const docRef=_fb.doc(null, null, docId);
     _fb.onSnapshot(docRef,(snap)=>{
       if(!snap.exists()) return;
       _applyRefDoc(ref.id,snap.data());
       try{localStorage.setItem(IMG_DOC_KEY,JSON.stringify(_buildLocalImgCache()));}catch(e){}
       if(!db.adm){_debouncedRender();}
     });
-  }catch(e){console.warn('Supabase listener attach failed for '+docId,e);}
+  }catch(e){console.warn('Zeabur listener attach failed for '+docId,e);}
 }
 
 
@@ -1168,7 +1168,7 @@ function _showLoader(){
     </div>`;
 }
 
-// Bootstrap: instant paint from cache, then hydrate from Supabase in two passes
+// Bootstrap: instant paint from cache, then hydrate from Zeabur in two passes
 window._boot = async function _boot(){
   // ── Pass 0: render instantly from localStorage (zero network wait) ────────
   let hadCache=false;
@@ -1192,13 +1192,13 @@ window._boot = async function _boot(){
     if(snap.exists()){
       _applyRemote(snap.data());
     } else {
-      // First ever run — seed Firestore with defaults
+      // First ever run — seed Zeabur with defaults
       const mainSeed=_buildMainPayload();
       mainSeed.products=DEFAULT_PRODS.map(p=>{const{img,imgs,...r}=p;return r;});
       await _fb.setDoc(_fb.storeDoc, mainSeed);
     }
   }catch(e){
-    console.warn('Supabase main read failed:',e);
+    console.warn('Zeabur main read failed:',e);
     if(!hadCache){
       const warn=document.createElement('div');
       warn.style.cssText='position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#FFF3CD;border:1px solid #EAD0A8;color:#854F0B;font-size:12px;padding:8px 16px;border-radius:8px;z-index:9999;max-width:420px;text-align:center';
@@ -1211,80 +1211,67 @@ window._boot = async function _boot(){
   try{ go('shop'); }catch(e){}
 
   // ── Pass 2: fetch all image rows in background (non-blocking) ────────────
-  // Set flag so snapshot callbacks that fire during listener registration
-  // (Firestore fires onSnapshot immediately with the current value) don't
-  // trigger extra re-renders while we're still loading everything.
   _bootImgFetchInProgress=true;
   (async()=>{
     try{
       // Fetch hero image doc
-      const heroRef=_fb.doc(_fb.fsdb,'netiva','hero');
+      const heroRef=_fb.doc(null, null, 'hero');
       const heroSnap=await _fb.getDoc(heroRef);
       if(heroSnap.exists()) _applyHeroDoc(heroSnap.data());
 
       // Fetch per-product image docs
       await Promise.all((db.products||[]).map(async prod=>{
         try{
-          const ref=_fb.doc(_fb.fsdb,'netiva','img_'+prod.id);
+          const ref=_fb.doc(null, null, 'img_'+prod.id);
           const snap=await _fb.getDoc(ref);
           if(snap.exists()) _applyProdImgDoc(prod.id, snap.data());
-        }catch(e){ console.warn('Supabase img read failed for '+prod.id,e); }
+        }catch(e){ console.warn('Zeabur img read failed for '+prod.id,e); }
       }));
 
       // Fetch per-product extended text docs
       await Promise.all((db.products||[]).map(async prod=>{
         try{
-          const ref=_fb.doc(_fb.fsdb,'netiva','text_'+prod.id);
+          const ref=_fb.doc(null, null, 'text_'+prod.id);
           const snap=await _fb.getDoc(ref);
           if(snap.exists()) _applyProdTextDoc(prod.id, snap.data());
-        }catch(e){ console.warn('Supabase text read failed for '+prod.id,e); }
+        }catch(e){ console.warn('Zeabur text read failed for '+prod.id,e); }
       }));
 
       // Fetch per-referrer QR docs
       await Promise.all((db.referrers||[]).map(async ref=>{
         try{
-          const docRef=_fb.doc(_fb.fsdb,'netiva','ref_'+ref.id);
+          const docRef=_fb.doc(null, null, 'ref_'+ref.id);
           const snap=await _fb.getDoc(docRef);
           if(snap.exists()) _applyRefDoc(ref.id, snap.data());
-        }catch(e){ console.warn('Supabase ref img read failed for '+ref.id,e); }
+        }catch(e){ console.warn('Zeabur ref img read failed for '+ref.id,e); }
       }));
-
-      // Also try old shopimages row for migration (in case data is still there)
-      try{
-        const oldRef=_fb.doc(_fb.fsdb,'netiva','shopimages');
-        const oldSnap=await _fb.getDoc(oldRef);
-        if(oldSnap.exists()) _applyImgPayload(oldSnap.data());
-      }catch(e){}
 
       // Cache all images locally
       try{localStorage.setItem(IMG_DOC_KEY, JSON.stringify(_buildLocalImgCache()));}catch(e){}
-      // Clear the boot flag before the final render so snapshot callbacks can
-      // trigger renders normally from this point on.
       _bootImgFetchInProgress=false;
-      // Always re-render after images/text have loaded so they appear for everyone
       try{render();}catch(e){}
-    }catch(e){ _bootImgFetchInProgress=false; console.warn('Supabase image read failed:',e); }
+    }catch(e){ _bootImgFetchInProgress=false; console.warn('Zeabur image read failed:',e); }
   })();
 
-  // ── Live listeners ────────────────────────────────────────────────────────
+  // ── Live listeners (polling via Zeabur adapter) ───────────────────────────
   try{
     _fb.onSnapshot(_fb.storeDoc, (snap)=>{
       if(!snap.exists()) return;
       _applyRemote(snap.data());
       if(!db.adm){ _debouncedRender(); }
     });
-  }catch(e){ console.warn('Supabase main listener failed:',e); }
+  }catch(e){ console.warn('Zeabur main listener failed:',e); }
 
   // Live listener for hero image
   try{
-    const heroRef=_fb.doc(_fb.fsdb,'netiva','hero');
+    const heroRef=_fb.doc(null, null, 'hero');
     _fb.onSnapshot(heroRef,(snap)=>{
       if(!snap.exists()) return;
       _applyHeroDoc(snap.data());
       try{localStorage.setItem(IMG_DOC_KEY,JSON.stringify(_buildLocalImgCache()));}catch(e){}
       if(!db.adm){ _debouncedRender(); }
     });
-  }catch(e){ console.warn('Supabase hero listener failed:',e); }
+  }catch(e){ console.warn('Zeabur hero listener failed:',e); }
 
   // Live listeners for each product image/text doc (uses dedup helper)
   (db.products||[]).forEach(prod=>{ _attachProdListeners(prod); });
@@ -1293,8 +1280,8 @@ window._boot = async function _boot(){
   (db.referrers||[]).forEach(ref=>{ _attachRefListener(ref); });
 }
 
-// Wait for Supabase adapter to be ready, then boot
-// Safety fallback: if Supabase never loads (e.g. blocked/offline), boot from cache after 3s
+// Wait for Zeabur adapter to be ready, then boot
+// Safety fallback: if adapter never loads (e.g. blocked/offline), boot from cache after 3s
 setTimeout(()=>{
   if(!_fbReady){
     _fbReady=true;
@@ -1934,7 +1921,7 @@ function prodFormHtml(p,pfx){
     <button onclick="removeProdImg('${pfx}',${i})" style="position:absolute;top:-5px;right:-5px;background:#E24B4A;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1">×</button>
     <div style="font-size:10px;text-align:center;color:var(--color-text-secondary);margin-top:3px">${lang==='en'?'Edit':'编辑'}</div>
   </div>`).join('');
-  return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px"><div class="fl"><label>${t('productName')} (EN)</label><input type="text" id="${pfx}name_en" value="${p?.name_en||''}" placeholder="e.g. Wildflower Honey"></div><div class="fl"><label>${t('productName')} (简体)</label><input type="text" id="${pfx}name_zh" value="${p?.name_zh||''}" placeholder="例如：野花蜂蜜"></div><div class="fl"><label>${t('productName')} (繁體)</label><input type="text" id="${pfx}name_zht" value="${p?.name_zht||''}" placeholder="例如：野花蜂蜜"></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px"><div class="fl"><label>${t('description')} (EN)</label>${rteHtml(pfx+'desc_en', p?.desc_en||'', 'e.g. Raw &amp; unfiltered')}</div><div class="fl"><label>${t('description')} (简体)</label>${rteHtml(pfx+'desc_zh', p?.desc_zh||'', '例如：原味未过滤')}</div><div class="fl"><label>${t('description')} (繁體)</label>${rteHtml(pfx+'desc_zht', p?.desc_zht||'', '例如：原味未過濾')}</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px"><div class="fl"><label style="display:flex;align-items:center;justify-content:space-between">${lang==='en'?'Full Details / Story':'产品详情 / 故事'} (EN) <span style="font-size:11px;color:var(--color-text-tertiary);font-weight:400">${lang==='en'?'Saved in its own Supabase row':'保存于独立文档'}</span></label>${rteHtml(pfx+'content_en', p?.content_en||'', lang==='en'?'e.g. Origin story, sourcing details, usage tips…':'例如：产地故事、采购信息、使用建议…')}</div><div class="fl"><label>${lang==='en'?'Full Details / Story':'产品详情 / 故事'} (简体)</label>${rteHtml(pfx+'content_zh', p?.content_zh||'', '例如：产地故事、采购信息…')}</div><div class="fl"><label>${lang==='en'?'Full Details / Story':'產品詳情 / 故事'} (繁體)</label>${rteHtml(pfx+'content_zht', p?.content_zht||'', '例如：產地故事、採購資訊…')}</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px"><div class="fl"><label>${t('tagLabel')} (EN)</label><input type="text" id="${pfx}tag_en" value="${p?.tag_en||''}" placeholder="e.g. Organic"></div><div class="fl"><label>${t('tagLabel')} (简体)</label><input type="text" id="${pfx}tag_zh" value="${p?.tag_zh||''}" placeholder="例如：有机"></div><div class="fl"><label>${t('tagLabel')} (繁體)</label><input type="text" id="${pfx}tag_zht" value="${p?.tag_zht||''}" placeholder="例如：有機"></div></div><div class="g2" style="margin-bottom:10px"><div class="fl"><label>${t('emojiIcon')}</label><input type="text" id="${pfx}icon" value="${v('icon')}" placeholder="🍯"></div><div class="fl"><label>${t('usdPrice')}</label><input type="number" id="${pfx}usdPrice" value="${v('usdPrice')}" placeholder="0.00" step="0.01" min="0"></div></div><div class="fl" style="margin-bottom:10px"><label>${t('status')}</label><select id="${pfx}active"><option value="1" ${(!p||p.active)?'selected':''}>${t('active')}</option><option value="0" ${(p&&!p.active)?'selected':''}>${t('inactive')}</option></select></div><div class="fl" style="margin-bottom:10px"><label>${t('category')}</label><select id="${pfx}category">${CATEGORIES.map(c=>`<option value="${c.id}" ${p?.category===c.id?'selected':''}>${c.en} / ${c.zht}</option>`).join('')}</select></div>
+  return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px"><div class="fl"><label>${t('productName')} (EN)</label><input type="text" id="${pfx}name_en" value="${p?.name_en||''}" placeholder="e.g. Wildflower Honey"></div><div class="fl"><label>${t('productName')} (简体)</label><input type="text" id="${pfx}name_zh" value="${p?.name_zh||''}" placeholder="例如：野花蜂蜜"></div><div class="fl"><label>${t('productName')} (繁體)</label><input type="text" id="${pfx}name_zht" value="${p?.name_zht||''}" placeholder="例如：野花蜂蜜"></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px"><div class="fl"><label>${t('description')} (EN)</label>${rteHtml(pfx+'desc_en', p?.desc_en||'', 'e.g. Raw &amp; unfiltered')}</div><div class="fl"><label>${t('description')} (简体)</label>${rteHtml(pfx+'desc_zh', p?.desc_zh||'', '例如：原味未过滤')}</div><div class="fl"><label>${t('description')} (繁體)</label>${rteHtml(pfx+'desc_zht', p?.desc_zht||'', '例如：原味未過濾')}</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px"><div class="fl"><label style="display:flex;align-items:center;justify-content:space-between">${lang==='en'?'Full Details / Story':'产品详情 / 故事'} (EN) <span style="font-size:11px;color:var(--color-text-tertiary);font-weight:400">${lang==='en'?'Saved in its own Zeabur row':'保存于独立文档'}</span></label>${rteHtml(pfx+'content_en', p?.content_en||'', lang==='en'?'e.g. Origin story, sourcing details, usage tips…':'例如：产地故事、采购信息、使用建议…')}</div><div class="fl"><label>${lang==='en'?'Full Details / Story':'产品详情 / 故事'} (简体)</label>${rteHtml(pfx+'content_zh', p?.content_zh||'', '例如：产地故事、采购信息…')}</div><div class="fl"><label>${lang==='en'?'Full Details / Story':'產品詳情 / 故事'} (繁體)</label>${rteHtml(pfx+'content_zht', p?.content_zht||'', '例如：產地故事、採購資訊…')}</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px"><div class="fl"><label>${t('tagLabel')} (EN)</label><input type="text" id="${pfx}tag_en" value="${p?.tag_en||''}" placeholder="e.g. Organic"></div><div class="fl"><label>${t('tagLabel')} (简体)</label><input type="text" id="${pfx}tag_zh" value="${p?.tag_zh||''}" placeholder="例如：有机"></div><div class="fl"><label>${t('tagLabel')} (繁體)</label><input type="text" id="${pfx}tag_zht" value="${p?.tag_zht||''}" placeholder="例如：有機"></div></div><div class="g2" style="margin-bottom:10px"><div class="fl"><label>${t('emojiIcon')}</label><input type="text" id="${pfx}icon" value="${v('icon')}" placeholder="🍯"></div><div class="fl"><label>${t('usdPrice')}</label><input type="number" id="${pfx}usdPrice" value="${v('usdPrice')}" placeholder="0.00" step="0.01" min="0"></div></div><div class="fl" style="margin-bottom:10px"><label>${t('status')}</label><select id="${pfx}active"><option value="1" ${(!p||p.active)?'selected':''}>${t('active')}</option><option value="0" ${(p&&!p.active)?'selected':''}>${t('inactive')}</option></select></div><div class="fl" style="margin-bottom:10px"><label>${t('category')}</label><select id="${pfx}category">${CATEGORIES.map(c=>`<option value="${c.id}" ${p?.category===c.id?'selected':''}>${c.en} / ${c.zht}</option>`).join('')}</select></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <label style="font-size:12px;color:var(--color-text-secondary);font-weight:500">${lang==='en'?'Variants (sizes / flavours / colours)':lang==='zht'?'規格（尺寸 / 口味 / 顏色）':'规格（尺寸 / 口味 / 颜色）'}</label>
       <button class="btn sm" onclick="addVar('${pfx}')">${lang==='en'?'+ Add':lang==='zht'?'+ 新增':'+ 添加'}</button>
@@ -2163,7 +2150,7 @@ function saveAdminSettings(){const em=document.getElementById('stg-email').value
 function toggleFeeEdit(){const ed=document.getElementById('fee-edit'),disp=document.getElementById('fee-display');if(!ed||!disp)return;const isOpen=ed.style.display==='block';ed.style.display=isOpen?'none':'block';if(!isOpen){document.getElementById('fee-input').value=(FEE_RATE*100).toFixed(4).replace(/\.?0+$/,'');document.getElementById('fee-input').focus();}}
 function saveFeeRate(){const inp=document.getElementById('fee-input'),msg=document.getElementById('fee-msg');const v=parseFloat(inp.value);if(isNaN(v)||v<0||v>100){msg.innerHTML=`<div class="m e" style="font-size:11px;padding:4px 8px">${lang==='en'?'Enter 0–100':(lang==='zht'?'請輸入 0–100':'请输入 0–100')}</div>`;return;}FEE_RATE=parseFloat((v/100).toFixed(6));sv(true);document.getElementById('fee-display').textContent=(v).toFixed(2).replace(/\.?0+$/,'')+'%';document.getElementById('fee-edit').style.display='none';msg.innerHTML='';}
 
-// Boot is handled by _boot() above — triggered once Supabase adapter is ready
+// Boot is handled by _boot() above — triggered once Zeabur adapter is ready
 </script>
 
 <script>
