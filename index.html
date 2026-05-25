@@ -474,7 +474,10 @@
       if(_snapPolls[key]) return;
       zbGetDoc(ref).then(snap=>{ if(snap.exists()) callback(snap); }).catch(()=>{});
       _snapPolls[key] = setInterval(async ()=>{
-        try{ const snap = await zbGetDoc(ref); callback(snap); }
+        try{
+          const snap = await zbGetDoc(ref);
+          if(snap.exists()) callback(snap);  // never fire on 404
+        }
         catch(e){ console.warn('Zeabur poll error ('+key+'):', e); }
       }, 5000);
     }
@@ -1249,7 +1252,7 @@ window._boot = async function _boot(){
       // Cache all images locally
       try{localStorage.setItem(IMG_DOC_KEY, JSON.stringify(_buildLocalImgCache()));}catch(e){}
       _bootImgFetchInProgress=false;
-      try{render();}catch(e){}
+      if(!db.adm || (!editingProdId && !editingRefId)){ try{render();}catch(e){} }
     }catch(e){ _bootImgFetchInProgress=false; console.warn('Zeabur image read failed:',e); }
   })();
 
@@ -1278,6 +1281,45 @@ window._boot = async function _boot(){
 
   // Live listeners for each referrer QR doc (uses dedup helper)
   (db.referrers||[]).forEach(ref=>{ _attachRefListener(ref); });
+
+  // ── Seed missing sub-docs from local state (runs silently in background) ──
+  // If any sub-doc rows don't exist in PostgreSQL yet (404s), write them now
+  // so polls stop 404ing and other devices can see the data.
+  (async()=>{
+    try{
+      // Hero image
+      if(db.heroImage){
+        const hRef=_fb.doc(null,null,'hero');
+        const hSnap=await _fb.getDoc(hRef).catch(()=>({exists:()=>false}));
+        if(!hSnap.exists()) await _fb.setDoc(hRef,{heroImage:db.heroImage}).catch(()=>{});
+      }
+      // Per-product image + text docs
+      for(const prod of (db.products||[])){
+        const imgs=prod.imgs||[];
+        if(imgs.length){
+          const iRef=_fb.doc(null,null,'img_'+prod.id);
+          const iSnap=await _fb.getDoc(iRef).catch(()=>({exists:()=>false}));
+          if(!iSnap.exists()) await _fb.setDoc(iRef,{imgs}).catch(()=>{});
+        }
+        const hasText=prod.content_en||prod.content_zh||prod.content_zht;
+        if(hasText){
+          const tRef=_fb.doc(null,null,'text_'+prod.id);
+          const tSnap=await _fb.getDoc(tRef).catch(()=>({exists:()=>false}));
+          if(!tSnap.exists()) await _fb.setDoc(tRef,{content_en:prod.content_en||'',content_zh:prod.content_zh||'',content_zht:prod.content_zht||''}).catch(()=>{});
+        }
+      }
+      // Per-referrer QR docs
+      for(const ref of (db.referrers||[])){
+        const hasQr=ref.alipayQr||ref.wechatQr;
+        if(hasQr){
+          const rRef=_fb.doc(null,null,'ref_'+ref.id);
+          const rSnap=await _fb.getDoc(rRef).catch(()=>({exists:()=>false}));
+          if(!rSnap.exists()) await _fb.setDoc(rRef,{alipayQr:ref.alipayQr||'',wechatQr:ref.wechatQr||''}).catch(()=>{});
+        }
+      }
+      console.log('Zeabur sub-doc seed complete.');
+    }catch(e){ console.warn('Zeabur sub-doc seed error:',e); }
+  })();
 }
 
 // Wait for Zeabur adapter to be ready, then boot
