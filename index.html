@@ -472,14 +472,22 @@
     function zbOnSnapshot(ref, callback){
       const key = ref._id;
       if(_snapPolls[key]) return;
-      zbGetDoc(ref).then(snap=>{ if(snap.exists()) callback(snap); }).catch(()=>{});
-      _snapPolls[key] = setInterval(async ()=>{
-        try{
-          const snap = await zbGetDoc(ref);
-          if(snap.exists()) callback(snap);  // never fire on 404
+      _snapPolls[key] = 'pending';
+      function startPolling(){
+        if(_snapPolls[key]==='pending'){
+          _snapPolls[key]=setInterval(async()=>{
+            try{ const snap=await zbGetDoc(ref); if(snap.exists()) callback(snap); }
+            catch(e){ console.warn('Zeabur poll error ('+key+'):',e); }
+          },5000);
         }
-        catch(e){ console.warn('Zeabur poll error ('+key+'):', e); }
-      }, 5000);
+      }
+      function initialCheck(){
+        zbGetDoc(ref).then(snap=>{
+          if(snap.exists()){ callback(snap); startPolling(); }
+          else { setTimeout(initialCheck,30000); }
+        }).catch(()=>{ setTimeout(initialCheck,30000); });
+      }
+      initialCheck();
     }
 
     const storeDocRef = zbDoc(null, null, MAIN_DOC);
@@ -1535,6 +1543,7 @@ function go(v){vw=v;closeCart();editingRefId=null;editingProdId=null;if(v==='sho
   _updateNavTheme(v);
   render();}
 function render(){
+  if(vw==='admin' && (editingProdId || editingRefId)) return;
   const r=document.getElementById('root');
   if(vw==='shop')rShop(r);else if(vw==='checkout')rCheckout(r);else if(vw==='reg')rReg(r);else if(vw==='login')rLogin(r);else if(vw==='acc')rAcc(r);else if(vw==='admin-login')rAdmLogin(r);else if(vw==='admin')rAdm(r);
   else if(vw.startsWith('pdp:')){const id=vw.slice(4);rPDP(id);}
