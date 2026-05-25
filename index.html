@@ -469,14 +469,33 @@
     }
 
     const _snapPolls = {};
+    const _snapLastSeen = {};
     function zbOnSnapshot(ref, callback){
       const key = ref._id;
       if(_snapPolls[key]) return;
-      zbGetDoc(ref).then(snap=>{ if(snap.exists()) callback(snap); }).catch(()=>{});
+      // Delay first fetch so boot Pass-2 getDoc calls settle and we don't double-render
+      setTimeout(()=>{
+        zbGetDoc(ref).then(snap=>{ if(snap.exists()) callback(snap); }).catch(()=>{});
+      }, 800);
       _snapPolls[key] = setInterval(async ()=>{
-        try{ const snap = await zbGetDoc(ref); callback(snap); }
+        // Never interrupt the admin while they have an active focused input/textarea/contenteditable
+        const focused = document.activeElement;
+        const adminEditing = focused && (
+          focused.tagName === 'INPUT' ||
+          focused.tagName === 'TEXTAREA' ||
+          focused.isContentEditable
+        );
+        if(adminEditing) return;
+        try{
+          const snap = await zbGetDoc(ref);
+          // Only fire callback if data actually changed, to avoid pointless re-renders
+          const serialized = JSON.stringify(snap.exists() ? snap.data() : null);
+          if(serialized === _snapLastSeen[key]) return;
+          _snapLastSeen[key] = serialized;
+          callback(snap);
+        }
         catch(e){ console.warn('Zeabur poll error ('+key+'):', e); }
-      }, 5000);
+      }, 8000);
     }
 
     const storeDocRef = zbDoc(null, null, MAIN_DOC);
@@ -1068,8 +1087,11 @@ let _bootImgFetchInProgress=false;
 let _renderDebounceTimer=null;
 function _debouncedRender(){
   if(_bootImgFetchInProgress) return; // Pass-2 will render when done
+  // Don't interrupt active typing in any input/textarea/contenteditable
+  const focused = document.activeElement;
+  if(focused && (focused.tagName==='INPUT'||focused.tagName==='TEXTAREA'||focused.isContentEditable)) return;
   if(_renderDebounceTimer) clearTimeout(_renderDebounceTimer);
-  _renderDebounceTimer=setTimeout(()=>{_renderDebounceTimer=null;try{render();}catch(e){}},120);
+  _renderDebounceTimer=setTimeout(()=>{_renderDebounceTimer=null;try{render();}catch(e){}},400);
 }
 
 // Register onSnapshot listeners for a product doc that didn't exist at boot time
