@@ -469,33 +469,14 @@
     }
 
     const _snapPolls = {};
-    const _snapLastSeen = {};
     function zbOnSnapshot(ref, callback){
       const key = ref._id;
       if(_snapPolls[key]) return;
-      // Delay first fetch so boot Pass-2 getDoc calls settle and we don't double-render
-      setTimeout(()=>{
-        zbGetDoc(ref).then(snap=>{ if(snap.exists()) callback(snap); }).catch(()=>{});
-      }, 800);
+      zbGetDoc(ref).then(snap=>{ if(snap.exists()) callback(snap); }).catch(()=>{});
       _snapPolls[key] = setInterval(async ()=>{
-        // Never interrupt the admin while they have an active focused input/textarea/contenteditable
-        const focused = document.activeElement;
-        const adminEditing = focused && (
-          focused.tagName === 'INPUT' ||
-          focused.tagName === 'TEXTAREA' ||
-          focused.isContentEditable
-        );
-        if(adminEditing) return;
-        try{
-          const snap = await zbGetDoc(ref);
-          // Only fire callback if data actually changed, to avoid pointless re-renders
-          const serialized = JSON.stringify(snap.exists() ? snap.data() : null);
-          if(serialized === _snapLastSeen[key]) return;
-          _snapLastSeen[key] = serialized;
-          callback(snap);
-        }
+        try{ const snap = await zbGetDoc(ref); callback(snap); }
         catch(e){ console.warn('Zeabur poll error ('+key+'):', e); }
-      }, 8000);
+      }, 5000);
     }
 
     const storeDocRef = zbDoc(null, null, MAIN_DOC);
@@ -1087,11 +1068,8 @@ let _bootImgFetchInProgress=false;
 let _renderDebounceTimer=null;
 function _debouncedRender(){
   if(_bootImgFetchInProgress) return; // Pass-2 will render when done
-  // Don't interrupt active typing in any input/textarea/contenteditable
-  const focused = document.activeElement;
-  if(focused && (focused.tagName==='INPUT'||focused.tagName==='TEXTAREA'||focused.isContentEditable)) return;
   if(_renderDebounceTimer) clearTimeout(_renderDebounceTimer);
-  _renderDebounceTimer=setTimeout(()=>{_renderDebounceTimer=null;try{render();}catch(e){}},400);
+  _renderDebounceTimer=setTimeout(()=>{_renderDebounceTimer=null;try{render();}catch(e){}},120);
 }
 
 // Register onSnapshot listeners for a product doc that didn't exist at boot time
@@ -1107,7 +1085,7 @@ function _attachProdListeners(prod){
         if(!snap.exists()) return;
         _applyProdImgDoc(prod.id,snap.data());
         try{localStorage.setItem(IMG_DOC_KEY,JSON.stringify(_buildLocalImgCache()));}catch(e){}
-        if(!db.adm){_debouncedRender();}
+        if(!db.adm || (!editingProdId && !editingRefId)){_debouncedRender();}
       });
     }catch(e){console.warn('Zeabur listener attach failed for '+imgDocId,e);}
   }
@@ -1118,7 +1096,7 @@ function _attachProdListeners(prod){
       _fb.onSnapshot(ref,(snap)=>{
         if(!snap.exists()) return;
         _applyProdTextDoc(prod.id,snap.data());
-        _debouncedRender();
+        if(!db.adm || (!editingProdId && !editingRefId)){_debouncedRender();}
       });
     }catch(e){console.warn('Zeabur listener attach failed for '+txtDocId,e);}
   }
@@ -1136,7 +1114,7 @@ function _attachRefListener(ref){
       if(!snap.exists()) return;
       _applyRefDoc(ref.id,snap.data());
       try{localStorage.setItem(IMG_DOC_KEY,JSON.stringify(_buildLocalImgCache()));}catch(e){}
-      if(!db.adm){_debouncedRender();}
+      if(!db.adm || (!editingProdId && !editingRefId)){_debouncedRender();}
     });
   }catch(e){console.warn('Zeabur listener attach failed for '+docId,e);}
 }
@@ -1280,7 +1258,7 @@ window._boot = async function _boot(){
     _fb.onSnapshot(_fb.storeDoc, (snap)=>{
       if(!snap.exists()) return;
       _applyRemote(snap.data());
-      if(!db.adm){ _debouncedRender(); }
+      if(!db.adm || (!editingProdId && !editingRefId)){ _debouncedRender(); }
     });
   }catch(e){ console.warn('Zeabur main listener failed:',e); }
 
@@ -1291,7 +1269,7 @@ window._boot = async function _boot(){
       if(!snap.exists()) return;
       _applyHeroDoc(snap.data());
       try{localStorage.setItem(IMG_DOC_KEY,JSON.stringify(_buildLocalImgCache()));}catch(e){}
-      if(!db.adm){ _debouncedRender(); }
+      if(!db.adm || (!editingProdId && !editingRefId)){ _debouncedRender(); }
     });
   }catch(e){ console.warn('Zeabur hero listener failed:',e); }
 
