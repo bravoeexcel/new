@@ -23,9 +23,7 @@ const port = process.env.PORT || 3000;
 // ── Database pool ─────────────────────────────────────────────────────────────
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('localhost')
-    ? false
-    : { rejectUnauthorized: false },
+  ssl: false,
 });
 
 // Create table on first connect (idempotent)
