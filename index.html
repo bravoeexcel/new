@@ -322,11 +322,14 @@
     .cart-qty-btn:hover { background: #f0f0f0; }
     .cart-qty-btn:active { background: #e8e8e8; }
     .cart-qty-num {
-      width: 36px; height: 28px; border: none;
+      width: 40px; height: 28px; border: none;
       border-left: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8;
-      text-align: center; font-size: 13px; font-weight: 600;
+      text-align: center; font-size: 14px; font-weight: 700;
       background: #fff; color: #1a1a1a;
     }
+    .cart-qty-num::-webkit-inner-spin-button,
+    .cart-qty-num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .cart-qty-num[type=number] { -moz-appearance: textfield; }
 
     /* Footer */
     .cart-footer {
@@ -500,11 +503,11 @@
       position: relative;
       align-items: center; justify-content: center;
       width: 36px; height: 36px;
-      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+      background: transparent; border: none;
       border-radius: var(--border-radius-md); cursor: pointer; flex-shrink: 0;
       color: #fff;
     }
-    .mob-cart-btn:hover { background: rgba(255,255,255,.25); }
+    .mob-cart-btn:hover { background: transparent; }
     .mob-cart-badge {
       position: absolute; top: -5px; right: -5px;
       background: #314021; color: #fff;
@@ -518,11 +521,11 @@
       display: none;
       align-items: center; justify-content: center;
       width: 36px; height: 36px;
-      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+      background: transparent; border: none;
       border-radius: var(--border-radius-md); cursor: pointer; flex-shrink: 0;
       color: #fff;
     }
-    .mob-menu-btn:hover { background: var(--color-background-secondary); }
+    .mob-menu-btn:hover { background: transparent; }
 
     .mob-dropdown {
       display: none;
@@ -782,7 +785,6 @@
 <nav class="nav">
   <div class="logo-wrap" onclick="go('shop')" style="cursor:pointer">
     <span class="logo">Netiva</span>
-    <span class="logo-sub">Excellence In Action</span>
   </div>
 
   <!-- Always-visible right side: rate chip, language, then desktop-only links + hamburger -->
@@ -1779,7 +1781,7 @@ function renderCartDrawer(){
         <div class="cart-store-header">
           <span class="cart-store-badge taobao">${lang==='en'?'STORE':lang==='zht'?'淘寶':'淘宝'}</span>
           <span class="cart-store-name">Netiva ${lang==='en'?'Official Store':lang==='zht'?'官方旗艦店':'官方旗舰店'} <span class="cart-store-arrow">›</span></span>
-          <span class="cart-store-coupon">${lang==='en'?'Coupon available':lang==='zht'?'有優惠券':'有优惠券'} ›</span>
+
         </div>
         ${cart.map(i=>{
           const imgContent=i.img?`<img src="${i.img}" alt="">`:(i.imgs&&i.imgs[0]?`<img src="${i.imgs[0]}" alt="">`:i.icon||'📦');
@@ -1794,7 +1796,7 @@ function renderCartDrawer(){
             <div class="cart-item-info">
               <div class="cart-item-name">${pName(i)}</div>
               ${i.variantName?`<div class="cart-item-variant">${i.variantName} <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 4l2 2 2-2"/></svg></div>`:''}
-              <span class="cart-item-tag promo">${lang==='en'?'Official -¥10':lang==='zht'?'官方立減10元':'官方立减10元'}</span>
+
               <div class="cart-item-bottom">
                 <div>
                   <span class="cart-item-price">¥${totalItemPrice}</span>
@@ -1825,15 +1827,7 @@ function renderCartDrawer(){
     <div class="cart-filter-bar">
       <button class="cart-filter-tab on">
         <svg width="11" height="11" viewBox="0 0 12 12" fill="#314021"><circle cx="6" cy="6" r="5"/></svg>
-        ${lang==='en'?'Add Coupon':lang==='zht'?'加補券':'加补券'}
-      </button>
-      <button class="cart-filter-tab">
-        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#314021" stroke-width="1.8"><path d="M2 6h8M6 2l4 4-4 4"/></svg>
-        ${lang==='en'?'Official Discount':lang==='zht'?'官方立減':'官方立减'}
-      </button>
-      <button class="cart-filter-tab">
-        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#314021" stroke-width="1.8"><path d="M6 2v8M3 5l3-3 3 3"/></svg>
-        ${lang==='en'?'Price Drop':lang==='zht'?'降價':'降价'}
+        ${lang==='en'?'My Cart':lang==='zht'?'我的購物車':'我的购物车'}
       </button>
     </div>
     <div class="cart-body">${itemsHtml}</div>
