@@ -111,10 +111,10 @@
     @media (max-width: 1200px) { .prods { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 900px) { .prods { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 700px) { .prods { grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 6px; } }
-    .pc { background: #fff; border: none; border-radius: 6px; overflow: hidden; transition: box-shadow .2s; }
+    .pc { background: #f0f0f0; border: none; border-radius: 6px; overflow: hidden; transition: box-shadow .2s; }
     .pc:hover { border-color: transparent; box-shadow: 0 4px 16px rgba(0,0,0,.1); }
     .pi { height: 240px; display: flex; align-items: center; justify-content: center; font-size: 80px; background: #f8f8f8; overflow: hidden; position: relative; }
-    @media (max-width: 700px) { .pi { height: 180px; font-size: 48px; } .pb { padding: 7px 8px 10px; } .pn { font-size: 12px; } .price-cny { font-size: 15px; } .ab { font-size: 11px; padding: 5px 10px; } }
+    @media (max-width: 700px) { .pi { height: 180px; font-size: 48px; } .pb { padding: 7px 8px 10px; background: #f0f0f0; } .pn { font-size: 12px; } .price-cny { font-size: 15px; } .ab { font-size: 11px; padding: 5px 10px; } }
     .pi img { width: 100%; height: 100%; object-fit: cover; }
     .pi-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
     .pi-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.5); cursor: pointer; border: none; padding: 0; transition: background .15s; }
@@ -125,14 +125,14 @@
     .pi-nav.right { right: 10px; }
     .pi-expand { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,.35); border: none; border-radius: var(--border-radius-md); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; opacity: 0; transition: opacity .15s; }
     .pc:hover .pi-expand { opacity: 1; }
-    .pb { padding: 8px 10px 12px; }
-    .pn { font-size: 14px; font-weight: 400; margin-bottom: 4px; letter-spacing: 0; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #333; }
+    .pb { padding: 8px 10px 12px; background: #f0f0f0; }
+    .pn { font-size: 16px; font-weight: 400; margin-bottom: 4px; letter-spacing: 0; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #333; }
     .pd { display: none; }
     .pf { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 4px; }
-    .price-cny { font-size: 17px; font-weight: 700; color: #C76E00; }
+    .price-cny { font-size: 17px; font-weight: 700; color: #87B82A; }
     .price-usd { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
-    .ab { font-size: 11px; font-weight: 500; padding: 5px 12px; border-radius: 999px; border: 1px solid #C76E00; background: transparent; color: #C76E00; cursor: pointer; white-space: nowrap; transition: all .15s; }
-    .ab:hover { background: #C76E00; color: #fff; }
+    .ab { font-size: 11px; font-weight: 500; padding: 5px 12px; border-radius: 999px; border: 1px solid #87B82A; background: transparent; color: #87B82A; cursor: pointer; white-space: nowrap; transition: all .15s; }
+    .ab:hover { background: #87B82A; color: #fff; }
     /* Product tag badge */
     .tag { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--color-accent-light); color: var(--color-accent); margin-bottom: 6px; border: 1px solid #b8d4a8; }
 
@@ -1978,9 +1978,9 @@ function rShop(r){
   <div style="padding:0.85rem 2rem;background:var(--color-background-primary);border-bottom:1px solid var(--color-border-tertiary);display:flex;justify-content:center">
     <div style="position:relative;width:100%;max-width:680px;display:flex;align-items:center;gap:0">
       <svg style="position:absolute;left:16px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:.4;z-index:1" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14"/></svg>
-      <input id="search-input" type="text" placeholder="${lang==='zh'||lang==='zht'?'搜索商品/订单 & AI提问':'Search products…'}" value="${searchQuery.replace(/"/g,'&quot;')}" oninput="onSearch(this.value)" style="flex:1;padding:11px 40px 11px 42px;border:1.5px solid #e0e0e0;border-right:none;border-radius:999px 0 0 999px;font-size:14px;background:#f7f7f7;transition:border-color .15s,box-shadow .15s;outline:none" onfocus="this.style.borderColor='#C76E00';this.style.background='#fff'" onblur="this.style.borderColor='#e0e0e0';this.style.background='#f7f7f7'">
+      <input id="search-input" type="text" placeholder="${lang==='zh'||lang==='zht'?'搜索商品/订单 & AI提问':'Search products…'}" value="${searchQuery.replace(/"/g,'&quot;')}" oninput="onSearch(this.value)" style="flex:1;padding:11px 40px 11px 42px;border:1.5px solid #e0e0e0;border-right:none;border-radius:999px 0 0 999px;font-size:14px;background:#f7f7f7;transition:border-color .15s,box-shadow .15s;outline:none" onfocus="this.style.borderColor='#87B82A';this.style.background='#fff'" onblur="this.style.borderColor='#e0e0e0';this.style.background='#f7f7f7'">
       <button id="search-clear" onclick="onSearch('')" style="display:${searchQuery?'flex':'none'};position:absolute;right:52px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;color:var(--color-text-tertiary);font-size:16px;line-height:1;padding:0;z-index:1">×</button>
-      <button style="padding:11px 22px;background:#C76E00;border:none;border-radius:0 999px 999px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s" onmouseover="this.style.background='#a85c00'" onmouseout="this.style.background='#C76E00'">
+      <button style="padding:11px 22px;background:#87B82A;border:none;border-radius:0 999px 999px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s" onmouseover="this.style.background='#7aad12'" onmouseout="this.style.background='#87B82A'">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14"/></svg>
       </button>
     </div>
