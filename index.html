@@ -836,8 +836,7 @@
       .nav-right-group { margin-left: 0 !important; }
       /* Rate chip on mobile — compact, beside language */
       .rate-chip { display: inline-flex !important; font-size: 10px; padding: 3px 8px; background: rgba(49,64,33,.07) !important; border-color: rgba(49,64,33,.15) !important; color: var(--color-text-secondary) !important; }
-      .rate-lbl-long { display: none !important; }
-      .rate-lbl-short { display: inline !important; }
+      .rate-lbl-short { display: none !important; }
       /* Shrink lang dropdown on mobile */
       .lang-dd-btn { font-size: 12px; }
       /* Smaller hero on mobile with side gaps */
@@ -885,6 +884,50 @@
       .fpill { padding: 7px 14px; font-size: 13px; }
       /* Cart and hamburger icons visible */
       .mob-cart-btn, .mob-menu-btn { color: #314021; }
+      /* Hero carousel mobile: compact side-by-side — text left, big art right */
+      .hero-panel-wrap { padding: 8px 12px 0 !important; margin-left: 0 !important; }
+      #hero-carousel { border-radius: 10px; }
+      .hero-slide { min-height: 160px !important; }
+      /* Keep inner row horizontal on mobile */
+      .hero-slide-inner {
+        flex-direction: row !important;
+        min-height: 160px !important;
+        align-items: stretch !important;
+      }
+      /* Text: narrower, tighter */
+      .hero-slide-text {
+        max-width: 58% !important;
+        flex: 1 !important;
+        padding: 1rem 0.75rem 1rem 1.1rem !important;
+        min-height: 160px !important;
+        justify-content: center !important;
+      }
+      .hero-slide-text h1 { font-size: 17px !important; margin-bottom: 5px !important; line-height: 1.2 !important; }
+      .hero-slide-text p { font-size: 11px !important; margin-bottom: 0.75rem !important; max-width: 100% !important; line-height: 1.5 !important; }
+      .hero-slide-text .hero-badge { font-size: 10px !important; padding: 2px 7px !important; margin-bottom: 7px !important; }
+      .hero-slide-text button { font-size: 11px !important; padding: 7px 14px !important; }
+      /* Artwork: right side, big, flush to edge */
+      .hero-slide-artwork {
+        flex: 0 0 42% !important;
+        width: 42% !important;
+        height: auto !important;
+        min-height: 160px !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+        padding-right: 0 !important;
+        overflow: visible !important;
+      }
+      .hero-slide-artwork svg { width: 200px !important; height: 180px !important; }
+      /* Photo slides on mobile */
+      .hero-slide-photo-text {
+        padding: 1rem 1.1rem !important;
+        max-width: 65% !important;
+        min-height: 160px !important;
+      }
+      .hero-slide-photo-text h1 { font-size: 18px !important; }
+      .hero-slide-photo-text p { font-size: 11px !important; max-width: 100% !important; }
+      /* Prev/next arrows smaller on mobile */
+      #hero-carousel > button { width: 24px !important; height: 24px !important; }
     }
   </style>
   <!-- Zeabur PostgreSQL REST adapter (replaces Supabase) -->
@@ -1827,9 +1870,9 @@ function buildCarouselSlidesHtml(heroImg, heroTitle, heroSub, adminHeroBar){
         <img style="position:absolute;inset:0;object-fit:cover;width:100%;height:100%" src="${bg}" alt="">
         <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.35) 60%,transparent 100%)"></div>
         ${adminEditBtn}
-        <div style="position:relative;z-index:2;padding:2rem 2.5rem;max-width:480px;display:flex;flex-direction:column;justify-content:center;min-height:260px;">
+        <div class="hero-slide-photo-text" style="position:relative;z-index:2;padding:2rem 2.5rem;max-width:480px;display:flex;flex-direction:column;justify-content:center;min-height:260px;">
           ${badge?`<div style="display:inline-flex;align-items:center;background:${ac.tag};border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${ac.tagText};padding:3px 10px;margin-bottom:10px;width:fit-content">${badge}</div>`:''}
-          <h1 style="font-family:var(--font-display);font-size:clamp(24px,3.2vw,38px);font-weight:500;margin-bottom:8px;letter-spacing:-.5px;color:#fff;line-height:1.15">${title}</h1>
+          <h1 style="font-family:var(--font-display);font-size:clamp(22px,3.2vw,38px);font-weight:500;margin-bottom:8px;letter-spacing:-.5px;color:#fff;line-height:1.15">${title}</h1>
           <p style="font-size:13px;color:rgba(255,255,255,.8);margin-bottom:1.25rem;line-height:1.6;font-weight:300;max-width:340px">${sub}</p>
           <button onclick="${s.btnAction==='reg'?`go('reg')`:`go('shop')`}" style="display:inline-flex;align-items:center;gap:6px;background:${ac.btnBg};border:1.5px solid ${ac.btnBorder};border-radius:6px;color:${ac.btnText};font-size:13px;font-weight:600;padding:10px 22px;cursor:pointer;transition:all .18s;letter-spacing:.02em;width:fit-content" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">${btn}<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button>
         </div>
@@ -1840,15 +1883,17 @@ function buildCarouselSlidesHtml(heroImg, heroTitle, heroSub, adminHeroBar){
     return `<div class="hero-slide" style="flex:0 0 100%;min-width:0;position:relative;min-height:260px;display:flex;align-items:stretch;overflow:hidden;background:${gradientBg};">
       ${adminEditBtn}
       <!-- left: promo text area -->
-      <div style="position:relative;z-index:2;flex:1;padding:2rem 2rem 2rem 2.5rem;display:flex;flex-direction:column;justify-content:center;min-height:260px;max-width:58%;">
-        ${badge?`<div style="display:inline-flex;align-items:center;gap:5px;background:${ac.tag};border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${ac.tagText};padding:3px 10px;margin-bottom:11px;width:fit-content">${badge}</div>`:''}
-        <h1 style="font-family:var(--font-display);font-size:clamp(22px,3vw,36px);font-weight:500;margin-bottom:9px;letter-spacing:-.4px;color:#fff;line-height:1.15">${title}</h1>
-        <p style="font-size:13px;color:rgba(255,255,255,.82);margin-bottom:1.25rem;line-height:1.6;font-weight:300;max-width:320px">${sub}</p>
-        <button onclick="${s.btnAction==='reg'?`go('reg')`:`go('shop')`}" style="display:inline-flex;align-items:center;gap:6px;background:${ac.btnBg};border:1.5px solid ${ac.btnBorder};border-radius:6px;color:${ac.btnText};font-size:13px;font-weight:600;padding:10px 22px;cursor:pointer;transition:all .18s;letter-spacing:.02em;width:fit-content" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">${btn}<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button>
-      </div>
-      <!-- right: artwork -->
-      <div style="position:relative;z-index:2;flex:0 0 280px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-        ${_slideArtwork[i] || _slideArtwork[0]}
+      <div class="hero-slide-inner" style="flex:1;display:flex;align-items:stretch;width:100%;min-height:260px;">
+        <div class="hero-slide-text" style="position:relative;z-index:2;flex:1;padding:2rem 2rem 2rem 2.5rem;display:flex;flex-direction:column;justify-content:center;min-height:260px;max-width:58%;">
+          ${badge?`<div style="display:inline-flex;align-items:center;gap:5px;background:${ac.tag};border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${ac.tagText};padding:3px 10px;margin-bottom:11px;width:fit-content">${badge}</div>`:''}
+          <h1 style="font-family:var(--font-display);font-size:clamp(20px,3vw,36px);font-weight:500;margin-bottom:9px;letter-spacing:-.4px;color:#fff;line-height:1.15">${title}</h1>
+          <p style="font-size:13px;color:rgba(255,255,255,.82);margin-bottom:1.25rem;line-height:1.6;font-weight:300;max-width:320px">${sub}</p>
+          <button onclick="${s.btnAction==='reg'?`go('reg')`:`go('shop')`}" style="display:inline-flex;align-items:center;gap:6px;background:${ac.btnBg};border:1.5px solid ${ac.btnBorder};border-radius:6px;color:${ac.btnText};font-size:13px;font-weight:600;padding:10px 22px;cursor:pointer;transition:all .18s;letter-spacing:.02em;width:fit-content" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">${btn}<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button>
+        </div>
+        <!-- right: artwork -->
+        <div class="hero-slide-artwork" style="position:relative;z-index:2;flex:0 0 280px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+          ${_slideArtwork[i] || _slideArtwork[0]}
+        </div>
       </div>
     </div>`;
   }).join('');
