@@ -27,12 +27,43 @@
       --border-radius-md: 10px;
       --border-radius-lg: 16px;
     }
-    body { font-family: var(--font-sans); color: var(--color-text-primary); font-size: 14px; background: var(--color-background-primary); margin: 0; padding: 0; }
+    body { font-family: var(--font-sans); color: var(--color-text-primary); font-size: 14px; background: #f2f2f2; margin: 0; padding: 0; }
     input, select, textarea, button { font-family: var(--font-sans); font-size: 13px; outline: none; }
     input, select, textarea { border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 8px 12px; background: var(--color-background-primary); color: var(--color-text-primary); transition: border-color .15s; }
     input:focus, select:focus, textarea:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(49,64,33,.08); }
 
-    .nav { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 2rem; border-bottom: none; background: transparent; gap: 8px; position: absolute; top: 0; left: 0; right: 0; z-index: 50; }
+    /* ── Top bar: sticky, sits right of sidebar, contains search ── */
+    .nav {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 24px;
+      background: #f2f2f2;
+      border-bottom: 1px solid #e0e0e0;
+      position: sticky; top: 0; left: 200px; right: 0; z-index: 50;
+      box-shadow: none;
+      margin-left: 200px;
+    }
+    @media (max-width: 600px) { .nav { left: 0; margin-left: 0; } }
+    /* Search form inside nav */
+    .nav-search-wrap {
+      flex: 1; display: flex; align-items: center; max-width: 640px;
+      position: relative;
+    }
+    .nav-search-input {
+      flex: 1; padding: 9px 40px 9px 16px;
+      border: 1.5px solid #e0e0e0; border-right: none;
+      border-radius: 999px 0 0 999px;
+      font-size: 14px; background: #f7f7f7;
+      transition: border-color .15s, background .15s; outline: none;
+      color: var(--color-text-primary);
+    }
+    .nav-search-input:focus { border-color: #4a7c2f; background: #fff; }
+    .nav-search-btn {
+      padding: 9px 20px; background: #4a7c2f; border: none;
+      border-radius: 0 999px 999px 0; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background .15s;
+    }
+    .nav-search-btn:hover { background: #3a6324; }
     .logo { font-family: var(--font-display); font-size: 22px; font-weight: 500; cursor: pointer; letter-spacing: -.3px; flex-shrink: 0; color: #fff; display: block; line-height: 1; }
     .logo-sub { display: block; font-size: 9px; font-weight: 400; color: rgba(255,255,255,.6); letter-spacing: .08em; text-transform: uppercase; margin-top: 3px; }
     @media (max-width: 600px) {
@@ -85,40 +116,41 @@
     .bdg.b { background: #E6F1FB; color: #185FA5; }
     .bdg.a { background: #FEF3E2; color: #92540c; }
 
-    .hero { position: relative; min-height: 620px; display: flex; align-items: center; justify-content: center; text-align: center; background: linear-gradient(135deg, #1e2a14 0%, #314021 60%, #3d5028 100%); overflow: hidden; margin-top: 0; }
+    .hero { position: relative; min-height: 220px; display: flex; align-items: center; justify-content: flex-start; text-align: left; background: linear-gradient(135deg, #1e2a14 0%, #314021 60%, #3d5028 100%); overflow: hidden; border-radius: 10px; }
+    @media (max-width: 600px) { .hero { min-height: 200px; border-radius: 0; } }
     .hero-bg { position: absolute; inset: 0; object-fit: cover; width: 100%; height: 100%; }
     .hero-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
-    .hero-content { position: relative; z-index: 2; padding: 8rem 2rem 5rem; max-width: 680px; margin: 0 auto; }
+    .hero-content { position: relative; z-index: 2; padding: 2rem 2.5rem; max-width: 560px; margin: 0; }
     .hero.no-img .hero-overlay { background: rgba(0,0,0,.15); display: block; }
     .hero.no-img .hero-content h1 { color: #fff; }
     .hero.no-img .hero-content p { color: rgba(255,255,255,.8); }
-    .hero h1 { font-family: var(--font-display); font-size: 52px; font-weight: 400; margin-bottom: 16px; letter-spacing: -.5px; color: #fff; line-height: 1.1; }
-    .hero p { font-size: 17px; color: rgba(255,255,255,.8); margin-bottom: 2.25rem; line-height: 1.7; font-weight: 300; }
+    .hero h1 { font-family: var(--font-display); font-size: 32px; font-weight: 400; margin-bottom: 8px; letter-spacing: -.3px; color: #fff; line-height: 1.2; }
+    .hero p { font-size: 14px; color: rgba(255,255,255,.8); margin-bottom: 1.25rem; line-height: 1.6; font-weight: 300; }
     .hero.no-img h1 { color: #fff; }
     .hero.no-img p { color: rgba(255,255,255,.75); }
-    .filters { display: flex; gap: 8px; padding: 1.25rem 2rem; flex-wrap: wrap; border-bottom: 1px solid var(--color-border-tertiary); background: var(--color-background-primary); }
-    .fpill { padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); transition: all .15s; letter-spacing: .02em; }
+    .filters { display: flex; gap: 8px; padding: 1rem 12px; flex-wrap: wrap; border-bottom: none; background: transparent; }
+    .fpill { padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--color-border-secondary); background: #fff; color: var(--color-text-secondary); transition: all .15s; letter-spacing: .02em; }
     .fpill:hover { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-accent-light); }
     .fpill.on { background: var(--color-accent); color: #fff; border-color: transparent; box-shadow: 0 1px 4px rgba(49,64,33,.2); }
     /* Category bar */
-    .cat-bar { display: flex; gap: 8px; padding: 10px 16px; background: var(--color-background-primary); border-bottom: 1px solid var(--color-border-tertiary); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; white-space: nowrap; }
+    .cat-bar { display: flex; gap: 6px; padding: 10px 12px; background: transparent; border-bottom: none; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; white-space: nowrap; }
     .cat-bar::-webkit-scrollbar { display: none; }
-    .cat-pill { flex-shrink: 0; display: inline-flex; align-items: center; padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); transition: all .15s; letter-spacing: .01em; white-space: nowrap; }
+    .cat-pill { flex-shrink: 0; display: inline-flex; align-items: center; padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid #ddd; background: #fff; color: var(--color-text-secondary); transition: all .15s; letter-spacing: .01em; white-space: nowrap; }
     .cat-pill:hover { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-accent-light); }
     .cat-pill.on { background: var(--color-accent); color: #fff; border-color: transparent; box-shadow: 0 1px 4px rgba(49,64,33,.2); }
 
-    .prods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 8px 12px; background: #f4f4f4; }
+    .prods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 8px; background: transparent; }
     @media (min-width: 601px) {
-      .prods { padding-left: 72px; }
-      .filters { padding-left: 72px; }
-      .cat-bar { padding-left: 72px; }
+      .prods { padding: 0 12px 12px; }
+      .filters { padding-left: 12px; }
+      .cat-bar { padding-left: 12px; }
     }
     @media (max-width: 1200px) { .prods { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 900px) { .prods { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 700px) { .prods { grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 6px; } }
-    .pc { background: #f0f0f0; border: none; border-radius: 6px; overflow: hidden; transition: box-shadow .2s; }
+    .pc { background: #fff; border: none; border-radius: 8px; overflow: hidden; transition: box-shadow .2s; }
     .pc:hover { border-color: transparent; box-shadow: 0 4px 16px rgba(0,0,0,.1); }
-    .pi { height: 240px; display: flex; align-items: center; justify-content: center; font-size: 80px; background: #f8f8f8; overflow: hidden; position: relative; }
+    .pi { height: 200px; display: flex; align-items: center; justify-content: center; font-size: 80px; background: #f8f8f8; overflow: hidden; position: relative; }
     @media (max-width: 700px) { .pi { height: 180px; font-size: 48px; } .pb { padding: 7px 8px 10px; background: #f0f0f0; } .pn { font-size: 12px; } .price-cny { font-size: 15px; } .ab { font-size: 11px; padding: 5px 10px; } }
     .pi img { width: 100%; height: 100%; object-fit: cover; }
     .pi-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
@@ -130,7 +162,7 @@
     .pi-nav.right { right: 10px; }
     .pi-expand { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,.35); border: none; border-radius: var(--border-radius-md); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; opacity: 0; transition: opacity .15s; }
     .pc:hover .pi-expand { opacity: 1; }
-    .pb { padding: 8px 10px 12px; background: #f0f0f0; }
+    .pb { padding: 8px 10px 12px; background: #fff; }
     .pn { font-size: 16px; font-weight: 400; margin-bottom: 4px; letter-spacing: 0; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #333; }
     .pd { display: none; }
     .pf { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 4px; }
@@ -608,100 +640,177 @@
     .lang-pick-btn-sub { font-size: 12px; color: var(--color-text-secondary); }
     .lang-pick-btn-arrow { color: var(--color-accent); font-size: 18px; font-weight: 600; }
 
-    /* ── Side Tab Bar (desktop only) ── */
+    /* ── Side Tab Bar (desktop only) — XHS-style full-height sidebar ── */
     .side-tab-bar {
       position: fixed;
       left: 0;
-      top: 50%;
-      transform: translateY(-50%);
+      top: 0;
+      bottom: 0;
       z-index: 200;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      padding: 10px 0;
-      background: #314021;
-      border-radius: 0 14px 14px 0;
-      box-shadow: 2px 0 24px rgba(0,0,0,0.18);
-      min-width: 60px;
+      align-items: stretch;
+      padding: 0;
+      background: #f2f2f2;
+      border-right: 1px solid #e0e0e0;
+      width: 200px;
+      box-shadow: none;
+      overflow: hidden;
     }
+    /* Logo area at top of sidebar */
     .side-tab-logo-wrap {
-      width: 60px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 8px 6px 4px;
+      align-items: flex-start;
+      padding: 22px 20px 16px;
       cursor: pointer;
       flex-shrink: 0;
+      border-bottom: 1px solid #e0e0e0;
     }
     .side-tab-logo-wrap:hover { opacity: 0.85; }
-    .side-tab-btn {
+    .side-tab-logo-text {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 500;
+      color: #314021;
+      letter-spacing: -.3px;
+    }
+    .side-tab-logo-sub {
+      font-size: 10px;
+      color: #999;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    /* Nav section that grows */
+    .side-tab-nav-section {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 4px;
       padding: 10px 10px;
-      width: 60px;
+      gap: 2px;
+      overflow-y: auto;
+    }
+    /* Bottom section for login/about */
+    .side-tab-bottom-section {
+      padding: 10px 10px 16px;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .side-tab-login-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 10px 16px;
+      background: #314021;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      letter-spacing: .01em;
+      transition: background .15s;
+      margin-bottom: 4px;
+    }
+    .side-tab-login-btn:hover { background: #243318; }
+    .side-tab-btn {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      width: 100%;
       background: none;
       border: none;
       cursor: pointer;
-      color: rgba(255,255,255,0.75);
-      font-size: 10px;
+      color: #5c5b55;
+      font-size: 14px;
       font-family: var(--font-sans);
-      letter-spacing: .03em;
+      letter-spacing: .01em;
       transition: color .15s, background .15s;
-      border-radius: 8px;
+      border-radius: 10px;
       position: relative;
       flex-shrink: 0;
+      text-align: left;
     }
     .side-tab-btn:hover {
-      color: #fff;
-      background: rgba(255,255,255,0.12);
+      color: #314021;
+      background: #e6e6e6;
     }
     .side-tab-btn.active {
-      color: #fff;
-      background: rgba(255,255,255,0.15);
+      color: #314021;
+      background: #dde8d4;
+      font-weight: 600;
     }
     .side-tab-btn svg { flex-shrink: 0; }
+    .side-tab-btn-label { flex: 1; }
     .side-tab-divider {
-      width: 36px;
       height: 1px;
-      background: rgba(255,255,255,0.15);
-      margin: 2px 0;
+      background: #f0f0f0;
+      margin: 6px 4px;
       flex-shrink: 0;
     }
     .side-tab-badge {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      min-width: 16px;
-      height: 16px;
+      min-width: 18px;
+      height: 18px;
       border-radius: 999px;
-      background: #87B82A;
+      background: #314021;
       color: #fff;
       font-size: 10px;
       font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0 3px;
+      padding: 0 4px;
       line-height: 1;
+      flex-shrink: 0;
     }
+    /* Login prompt text */
+    .side-tab-login-hint {
+      font-size: 11px;
+      color: #aaa;
+      line-height: 1.5;
+      padding: 0 4px 4px;
+    }
+    .side-tab-login-hint a { color: #314021; cursor: pointer; text-decoration: underline; }
     /* Avatar in sidebar */
     .side-tab-ava {
       width: 28px;
       height: 28px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.2);
-      color: #fff;
+      background: #e2edd8;
+      color: #314021;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 11px;
       font-weight: 600;
-      border: 1px solid rgba(255,255,255,.35);
+      border: 1px solid #b8d4a8;
+      flex-shrink: 0;
     }
+    /* About item at very bottom */
+    .side-tab-about-btn {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      width: 100%;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #aaa;
+      font-size: 12px;
+      font-family: var(--font-sans);
+      border-radius: 8px;
+      transition: color .15s, background .15s;
+    }
+    .side-tab-about-btn:hover { color: #5c5b55; background: #f8f8f8; }
     /* Hide side tab bar on mobile */
     @media (max-width: 600px) {
       .side-tab-bar { display: none; }
@@ -715,9 +824,15 @@
       /* Shrink rate chip on mobile */
       .rate-chip { font-size: 10px; padding: 3px 7px; max-width: 110px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
       /* Smaller hero on mobile */
-      .hero { min-height: 440px; }
-      .hero h1 { font-size: 32px; }
-      .hero p { font-size: 15px; }
+      .hero { min-height: 200px; border-radius: 0; }
+      .hero h1 { font-size: 24px; }
+      .hero p { font-size: 13px; }
+      .hero-content { padding: 1.5rem; }
+      .hero-panel-wrap { margin-left: 0 !important; padding: 0 !important; }
+      .search-bar-wrap { margin-left: 0 !important; }
+      /* Disable sidebar margin on mobile for cat-bar and products */
+      #cat-bar { margin-left: 0 !important; }
+      #mp { margin-left: 0 !important; }
       /* Product grid: 2-column on mobile */
       .prods {
         grid-template-columns: repeat(2, 1fr) !important;
@@ -879,66 +994,87 @@
   </div>
 </div>
 
-<!-- Side Tab Bar (desktop only) -->
+<!-- Side Tab Bar (desktop only) — XHS-style full-height sidebar -->
 <div class="side-tab-bar" id="side-tab-bar">
-  <!-- Home -->
-  <button class="side-tab-btn" id="stb-home" onclick="go('shop')" title="Home">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-5a1 1 0 00-1-1h-4a1 1 0 00-1 1v5H4a1 1 0 01-1-1V10.5z"/>
-    </svg>
-    <span id="stb-shop-lbl">Home</span>
-  </button>
-  <div class="side-tab-divider"></div>
-  <!-- Cart -->
-  <button class="side-tab-btn" id="stb-cart" onclick="tCart()" title="Cart">
-    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M1 1h2l2.4 7.6a1 1 0 001 .7h5.2a1 1 0 001-.8L14 5H4"/>
-      <circle cx="6.5" cy="13.5" r="1"/><circle cx="11.5" cy="13.5" r="1"/>
-    </svg>
-    <span id="stb-cart-lbl">Cart</span>
-    <span class="side-tab-badge" id="stb-cart-count" style="display:none">0</span>
-  </button>
-  <div class="side-tab-divider"></div>
-  <!-- Auth area: register + sign-in, or profile when logged in -->
-  <div id="stb-auth">
-    <button class="side-tab-btn" id="stb-reg" onclick="go('reg')" title="Register">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 3v6M16 6h6"/></svg>
-      <span id="stb-reg-lbl">Register</span>
+  <!-- Logo at top -->
+  <div class="side-tab-logo-wrap" onclick="go('shop')">
+    <div class="side-tab-logo-text">Netiva</div>
+    <div class="side-tab-logo-sub">Excellence In Action</div>
+  </div>
+
+  <!-- Main nav items -->
+  <div class="side-tab-nav-section">
+    <!-- Discover / Home -->
+    <button class="side-tab-btn active" id="stb-home" onclick="go('shop')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-5a1 1 0 00-1-1h-4a1 1 0 00-1 1v5H4a1 1 0 01-1-1V10.5z"/>
+      </svg>
+      <span class="side-tab-btn-label" id="stb-shop-lbl">Discover</span>
     </button>
-    <button class="side-tab-btn" id="stb-login" onclick="go('login')" title="Sign In">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-      <span id="stb-login-lbl">Sign In</span>
+    <!-- Cart -->
+    <button class="side-tab-btn" id="stb-cart" onclick="tCart()">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 1h2l2.4 7.6a1 1 0 001 .7h5.2a1 1 0 001-.8L14 5H4"/>
+        <circle cx="6.5" cy="13.5" r="1"/><circle cx="11.5" cy="13.5" r="1"/>
+      </svg>
+      <span class="side-tab-btn-label" id="stb-cart-lbl">Cart</span>
+      <span class="side-tab-badge" id="stb-cart-count" style="display:none">0</span>
+    </button>
+    <div class="side-tab-divider"></div>
+    <!-- Auth area: register + sign-in, or profile when logged in -->
+    <div id="stb-auth">
+      <button class="side-tab-btn" id="stb-reg" onclick="go('reg')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 3v6M16 6h6"/></svg>
+        <span class="side-tab-btn-label" id="stb-reg-lbl">Register</span>
+      </button>
+      <button class="side-tab-btn" id="stb-login" onclick="go('login')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        <span class="side-tab-btn-label" id="stb-login-lbl">Sign In</span>
+      </button>
+    </div>
+    <div class="side-tab-divider"></div>
+    <!-- Admin -->
+    <button class="side-tab-btn" id="stb-admin" onclick="go('admin-login')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="6" r="3"/>
+        <path d="M5 21v-2a5 5 0 015-5h4a5 5 0 015 5v2"/>
+        <path d="M12 10l-1 3h2l-1 3" stroke-width="1.4"/>
+      </svg>
+      <span class="side-tab-btn-label" id="stb-admin-lbl">Admin</span>
     </button>
   </div>
-  <div class="side-tab-divider"></div>
-  <!-- Admin -->
-  <button class="side-tab-btn" id="stb-admin" onclick="go('admin-login')" title="Admin">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-      <!-- Head -->
-      <circle cx="12" cy="6" r="3"/>
-      <!-- Suit jacket body -->
-      <path d="M5 21v-2a5 5 0 015-5h4a5 5 0 015 5v2"/>
-      <!-- Tie -->
-      <path d="M12 10l-1 3h2l-1 3" stroke-width="1.4"/>
-    </svg>
-    <span id="stb-admin-lbl">Admin</span>
-  </button>
+
+  <!-- Bottom: login CTA + about -->
+  <div class="side-tab-bottom-section">
+    <div class="side-tab-login-hint" id="stb-login-hint">
+      Log in to explore more content and manage your orders.
+    </div>
+    <button class="side-tab-login-btn" id="stb-login-cta" onclick="go('login')">Log In</button>
+
+  </div>
 </div>
 
-<nav class="nav">
-  <div class="logo-wrap" onclick="go('shop')" style="cursor:pointer">
+<nav class="nav" id="main-nav">
+  <div class="logo-wrap" onclick="go('shop')" style="cursor:pointer;display:none">
     <span class="logo">Netiva</span>
   </div>
 
-  <!-- Always-visible right side: rate chip, language, then desktop-only links + hamburger -->
-  <div class="nav-right-group" style="display:flex;align-items:center;gap:10px;margin-left:auto">
+  <!-- Search bar — centred in top nav -->
+  <div class="nav-search-wrap">
+    <input id="search-input" class="nav-search-input" type="text" placeholder="Search products…" value="" oninput="onSearch(this.value)">
+    <button class="nav-search-btn" onclick="">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14"/></svg>
+    </button>
+  </div>
 
-    <!-- Rate chip: always visible -->
-    <div class="rate-chip"><span class="rate-dot loading" id="rdot"></span><span id="rlbl">...</span></div>
+  <!-- Right side controls -->
+  <div class="nav-right-group" style="display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0">
+    <!-- Rate chip -->
+    <div class="rate-chip" style="background:rgba(49,64,33,.08);border-color:rgba(49,64,33,.15);color:var(--color-text-secondary)"><span class="rate-dot loading" id="rdot"></span><span id="rlbl">...</span></div>
 
-    <!-- Language dropdown: always visible -->
+    <!-- Language dropdown -->
     <div class="lang-dd" id="lang-dd">
-      <button class="lang-dd-btn" id="lang-dd-btn" onclick="toggleLangDd(event)">
+      <button class="lang-dd-btn" id="lang-dd-btn" onclick="toggleLangDd(event)" style="color:var(--color-text-secondary)">
         <span id="lang-label">EN</span>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
@@ -949,12 +1085,12 @@
       </div>
     </div>
 
-    <!-- Desktop-only: nr div for admin panel button when logged in as admin (all nav items now in side tab bar) -->
+    <!-- Desktop-only admin -->
     <div class="nav-desktop-links" style="display:flex;align-items:center;gap:1.25rem">
       <div class="nav-r" id="nr"></div>
     </div>
 
-    <!-- Mobile-only: cart icon button (always shown) + hamburger -->
+    <!-- Mobile-only: cart icon + hamburger -->
     <button class="mob-cart-btn" id="mob-cart-btn" onclick="tCart()" aria-label="Cart">
       <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1h2l2.4 7.6a1 1 0 001 .7h5.2a1 1 0 001-.8L14 5H4"/><circle cx="6.5" cy="13.5" r="1"/><circle cx="11.5" cy="13.5" r="1"/></svg>
       <span class="mob-cart-badge" id="mob-cart-count" style="display:none">0</span>
@@ -966,7 +1102,6 @@
         <line x1="2" y1="13" x2="16" y2="13"/>
       </svg>
     </button>
-
   </div>
 
   <!-- Mobile dropdown -->
@@ -976,11 +1111,10 @@
       <span>Shop</span>
     </button>
     <button class="mob-dd-item" id="mob-nav-admin" onclick="go('admin-login');closeMobMenu()">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="4" r="2.5"/><path d="M3 15v-1.5A4.5 4.5 0 017.5 9h1A4.5 4.5 0 0113 13.5V15"/><path d="M8 9l-.9 2.2.9 1 .9-1z" fill="currentColor" stroke="currentColor" stroke-width="0.8"/><path d="M8 12.2V15" stroke-width="1.2"/></svg>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="4" r="2.5"/><path d="M3 15v-1.5A4.5 4.5 0 017.5 9h1A4.5 4.5 0 0113 13.5V15"/></svg>
       <span>Admin</span>
     </button>
     <div id="mob-nav-auth">
-      <!-- Default: show register + sign in; replaced by rNav() when logged in -->
       <button class="mob-dd-item" id="mob-nav-reg" onclick="go('reg');closeMobMenu()">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M12 2v4M10 4h4"/></svg>
         <span>Register</span>
@@ -993,9 +1127,7 @@
   </div>
 </nav>
 
-<div id="sticky-nav" style="display:none;position:fixed;top:0;left:0;right:0;z-index:48;background:#314021;box-shadow:0 2px 20px rgba(0,0,0,.18);padding:1.1rem 2rem;align-items:center;justify-content:space-between;gap:8px">
-  <span class="logo" style="color:#fff;font-family:'Playfair Display',Georgia,serif;font-size:22px;font-weight:500;cursor:pointer" onclick="go('shop')">Netiva</span>
-</div>
+<div id="sticky-nav" style="display:none"></div>
 
 <div id="cart-overlay" class="cart-overlay" style="display:none" onclick="closeCart()"></div>
 <div id="cart-drawer" class="cart-drawer" style="display:none"></div>
@@ -2007,19 +2139,24 @@ function rNav(){
   const stbAuth=document.getElementById('stb-auth');
   if(stbAuth){
     if(db.cur){
-      stbAuth.innerHTML=`<button class="side-tab-btn" onclick="go('acc')" title="${t('myAccount')}">
+      stbAuth.innerHTML=`<button class="side-tab-btn" onclick="go('acc')">
         <div class="side-tab-ava">${ava(db.cur)}</div>
-        <span>${t('myAccount')}</span>
+        <span class="side-tab-btn-label">${t('myAccount')}</span>
       </button>`;
+      // Hide login CTA when logged in
+      const hint=document.getElementById('stb-login-hint');if(hint)hint.style.display='none';
+      const cta=document.getElementById('stb-login-cta');if(cta)cta.style.display='none';
     } else {
-      stbAuth.innerHTML=`<button class="side-tab-btn" id="stb-reg" onclick="go('reg')" title="${t('register')}">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M12 2v4M10 4h4"/></svg>
-        <span id="stb-reg-lbl">${t('register')}</span>
+      stbAuth.innerHTML=`<button class="side-tab-btn" id="stb-reg" onclick="go('reg')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 3v6M16 6h6"/></svg>
+        <span class="side-tab-btn-label" id="stb-reg-lbl">${t('register')}</span>
       </button>
-      <button class="side-tab-btn" id="stb-login" onclick="go('login')" title="${t('signIn')}">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3h3a1 1 0 011 1v8a1 1 0 01-1 1h-3"/><path d="M6 11l3-3-3-3M9 8H2"/></svg>
-        <span id="stb-login-lbl">${t('signIn')}</span>
+      <button class="side-tab-btn" id="stb-login" onclick="go('login')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        <span class="side-tab-btn-label" id="stb-login-lbl">${t('signIn')}</span>
       </button>`;
+      const hint=document.getElementById('stb-login-hint');if(hint)hint.style.display='';
+      const cta=document.getElementById('stb-login-cta');if(cta)cta.style.display='';
     }
   }
   // Highlight active tab
@@ -2044,55 +2181,14 @@ function rNav(){
 
 let vw='shop';
 function _updateNavTheme(v){
+  // Nav is always white/sticky — no theme changes needed
   const nav=document.querySelector('.nav');
-  const stickyNav=document.getElementById('sticky-nav');
-  const isShop = v==='shop';
-  // Non-shop pages: solid white nav with dark text
-  if(!isShop){
-    if(nav){
-      nav.style.position='sticky';
-      nav.style.top='0';
-      nav.style.background='#fff';
-      nav.style.borderBottom='1px solid #e5e4de';
-      nav.style.boxShadow='0 1px 8px rgba(0,0,0,.06)';
-    }
-    // Make logo and all nav text dark
-    const logo=document.querySelector('.logo');
-    if(logo) logo.style.color='#314021';
-    document.querySelectorAll('.nav-c a, .nav-link-btn, .lang-dd-btn, #nav-admin').forEach(el=>{
-      el.style.color='#5c5b55';
-    });
-    const chip=document.querySelector('.rate-chip');
-    if(chip){chip.style.background='#e2edd8';chip.style.border='1px solid #b8d4a8';chip.style.color='#314021';}
-    const ava=document.querySelector('#nr .ava, #nr-mob .ava');
-    if(ava){ava.style.background='#e2edd8';ava.style.color='#314021';ava.style.border='1px solid #b8d4a8';}
-    const mobBtn=document.querySelector('.mob-menu-btn');
-    if(mobBtn){mobBtn.style.background='transparent';mobBtn.style.border='1px solid #d4d2ca';mobBtn.style.color='#314021';}
-    const mobCartBtn=document.getElementById('mob-cart-btn');
-    if(mobCartBtn){mobCartBtn.style.background='transparent';mobCartBtn.style.border='1px solid #d4d2ca';mobCartBtn.style.color='#314021';}
-    if(stickyNav) stickyNav.style.display='none';
-  } else {
-    // Shop: restore transparent floating nav
-    if(nav){
-      nav.style.position='absolute';
-      nav.style.top='0';
-      nav.style.background='transparent';
-      nav.style.borderBottom='none';
-      nav.style.boxShadow='none';
-    }
-    const logo=document.querySelector('.logo');
-    if(logo) logo.style.color='#fff';
-    document.querySelectorAll('.nav-c a, .nav-link-btn, .lang-dd-btn, #nav-admin').forEach(el=>{
-      el.style.color='rgba(255,255,255,.8)';
-    });
-    const chip=document.querySelector('.rate-chip');
-    if(chip){chip.style.background='rgba(255,255,255,.15)';chip.style.border='1px solid rgba(255,255,255,.25)';chip.style.color='rgba(255,255,255,.9)';}
-    const ava=document.querySelector('#nr .ava, #nr-mob .ava');
-    if(ava){ava.style.background='rgba(255,255,255,.2)';ava.style.color='#fff';ava.style.border='1px solid rgba(255,255,255,.35)';}
-    const mobBtn=document.querySelector('.mob-menu-btn');
-    if(mobBtn){mobBtn.style.background='rgba(255,255,255,.15)';mobBtn.style.border='1px solid rgba(255,255,255,.3)';mobBtn.style.color='#fff';}
-    const mobCartBtn=document.getElementById('mob-cart-btn');
-    if(mobCartBtn){mobCartBtn.style.background='rgba(255,255,255,.15)';mobCartBtn.style.border='1px solid rgba(255,255,255,.3)';mobCartBtn.style.color='#fff';}
+  if(nav){
+    nav.style.position='sticky';
+    nav.style.top='0';
+    nav.style.background='#f2f2f2';
+    nav.style.borderBottom='1px solid #e0e0e0';
+    nav.style.boxShadow='none';
   }
 }
 function go(v){vw=v;closeCart();editingRefId=null;editingProdId=null;if(v==='shop'){selectedVariants={};searchQuery='';selectedCat='';document.onkeydown=null;}
@@ -2155,22 +2251,18 @@ function rShop(r){
       </div>
     </div>
   </div>`:'' ;
-  r.innerHTML=`<div class="${heroClass}" style="position:relative">${heroBg}${adminHeroBar}<div class="hero-content"><h1>${heroTitle}</h1><p>${heroSub}</p><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn p" onclick="document.getElementById('mp').scrollIntoView({behavior:'smooth'})">${t('shopNow')}</button>${!db.cur?`<button class="btn" onclick="go('reg')">${t('registerWithCode')}</button>`:''}</div></div></div>
-  <div style="padding:0.85rem 2rem;background:var(--color-background-primary);border-bottom:1px solid var(--color-border-tertiary);display:flex;justify-content:center">
-    <div style="position:relative;width:100%;max-width:680px;display:flex;align-items:center;gap:0">
-      <svg style="position:absolute;left:16px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:.4;z-index:1" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14"/></svg>
-      <input id="search-input" type="text" placeholder="${lang==='zh'||lang==='zht'?'搜索商品/订单 & AI提问':'Search products…'}" value="${searchQuery.replace(/"/g,'&quot;')}" oninput="onSearch(this.value)" style="flex:1;padding:11px 40px 11px 42px;border:1.5px solid #e0e0e0;border-right:none;border-radius:999px 0 0 999px;font-size:14px;background:#f7f7f7;transition:border-color .15s,box-shadow .15s;outline:none" onfocus="this.style.borderColor='#87B82A';this.style.background='#fff'" onblur="this.style.borderColor='#e0e0e0';this.style.background='#f7f7f7'">
-      <button id="search-clear" onclick="onSearch('')" style="display:${searchQuery?'flex':'none'};position:absolute;right:52px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;color:var(--color-text-tertiary);font-size:16px;line-height:1;padding:0;z-index:1">×</button>
-      <button style="padding:11px 22px;background:#87B82A;border:none;border-radius:0 999px 999px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s" onmouseover="this.style.background='#7aad12'" onmouseout="this.style.background='#87B82A'">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14"/></svg>
-      </button>
+  r.innerHTML=`
+  <!-- Hero panel: white card inside grey content area -->
+  <div style="padding:12px 12px 0;margin-left:200px" class="hero-panel-wrap" id="hero-panel-wrap">
+    <div style="border-radius:10px;overflow:hidden;position:relative">
+      <div class="${heroClass}" style="position:relative">${heroBg}${adminHeroBar}<div class="hero-content"><h1>${heroTitle}</h1><p>${heroSub}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn p" style="font-size:13px;padding:7px 18px" onclick="document.getElementById('mp').scrollIntoView({behavior:'smooth'})">${t('shopNow')}</button>${!db.cur?`<button class="btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4);color:#fff;font-size:13px;padding:7px 18px" onclick="go('reg')">${t('registerWithCode')}</button>`:''}</div></div></div>
     </div>
   </div>
-  <div class="cat-bar" id="cat-bar">
+  <div class="cat-bar" id="cat-bar" style="margin-left:200px;padding-top:12px">
     <button class="cat-pill${selectedCat===''?' on':''}" onclick="onCat('')">${lang==='zh'?'全部':lang==='zht'?'全部':'All'}</button>
     ${CATEGORIES.map(c=>`<button class="cat-pill${selectedCat===c.id?' on':''}" onclick="onCat('${c.id}')">${lang==='zh'?c.zh:lang==='zht'?c.zht:c.en}</button>`).join('')}
   </div>
-  <div class="prods" id="mp"></div>`;
+  <div class="prods" id="mp" style="margin-left:200px"></div>`;
   rShopProducts();
 }
 function toggleHeroEdit(){
@@ -2826,26 +2918,7 @@ function saveFeeRate(){const inp=document.getElementById('fee-input'),msg=docume
 
 <script>
 (function(){
-  // Show a solid green sticky nav once the hero scrolls out of view
-  const stickyNav = document.getElementById('sticky-nav');
-  function updateStickyNav(){
-    const root = document.getElementById('root');
-    const hero = root ? root.querySelector('.hero') : null;
-    if(!hero || !stickyNav) return;
-    const rect = hero.getBoundingClientRect();
-    const navEl = document.querySelector('.nav');
-    if(rect.bottom <= 0){
-      stickyNav.style.display = 'flex';
-      if(navEl) navEl.style.opacity = '0';
-    } else {
-      stickyNav.style.display = 'none';
-      if(navEl) navEl.style.opacity = '1';
-    }
-  }
-  window.addEventListener('scroll', updateStickyNav, {passive:true});
-  // Re-check on render
-  const origRender = window.render;
-  window.addEventListener('load', updateStickyNav);
+  // Nav is always white/sticky — no scroll logic needed
 })();
 </script>
 
