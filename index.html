@@ -32,15 +32,16 @@
     input, select, textarea { border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 8px 12px; background: var(--color-background-primary); color: var(--color-text-primary); transition: border-color .15s; }
     input:focus, select:focus, textarea:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(49,64,33,.08); }
 
-    /* ── Top bar: sticky, sits right of sidebar, contains search ── */
+    /* ── Top bar: sticky, sits right of sidebar, no search ── */
     .nav {
       display: flex; align-items: center; gap: 12px;
       padding: 10px 24px;
       background: #f2f2f2;
       border-bottom: 1px solid #e0e0e0;
-      position: sticky; top: 0; left: 200px; right: 0; z-index: 50;
+      position: sticky; top: 0; left: 240px; right: 0; z-index: 50;
       box-shadow: none;
-      margin-left: 200px;
+      margin-left: 240px;
+      min-height: 52px;
     }
     @media (max-width: 600px) { .nav { left: 0; margin-left: 0; } }
     /* Search form inside nav */
@@ -66,8 +67,12 @@
     .nav-search-btn:hover { background: #3a6324; }
     .logo { font-family: var(--font-display); font-size: 22px; font-weight: 500; cursor: pointer; letter-spacing: -.3px; flex-shrink: 0; color: #fff; display: block; line-height: 1; }
     .logo-sub { display: block; font-size: 9px; font-weight: 400; color: rgba(255,255,255,.6); letter-spacing: .08em; text-transform: uppercase; margin-top: 3px; }
+    .logo-wrap { display: none; flex-direction: column; align-items: flex-start; cursor: pointer; flex-shrink: 0; }
+    .logo-mob { font-family: var(--font-display); font-size: 20px; font-weight: 500; color: #314021; letter-spacing: -.3px; line-height: 1; }
+    .logo-mob-sub { font-size: 8px; font-weight: 400; color: #9e9c96; letter-spacing: .08em; text-transform: uppercase; margin-top: 2px; }
     @media (max-width: 600px) {
       .logo-sub { display: none; }
+      .logo-wrap { display: flex !important; }
     }
     .nav-c { display: flex; gap: 1.5rem; }
     .nav-c a { font-size: 13px; color: rgba(255,255,255,.75); cursor: pointer; text-decoration: none; letter-spacing: .01em; }
@@ -139,15 +144,15 @@
     .cat-pill:hover { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-accent-light); }
     .cat-pill.on { background: var(--color-accent); color: #fff; border-color: transparent; box-shadow: 0 1px 4px rgba(49,64,33,.2); }
 
-    .prods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 8px; background: transparent; }
+    .prods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; padding: 8px; background: transparent; }
     @media (min-width: 601px) {
-      .prods { padding: 0 12px 12px; }
-      .filters { padding-left: 12px; }
-      .cat-bar { padding-left: 12px; }
+      .prods { padding: 0 20px 24px; gap: 20px; }
+      .filters { padding-left: 20px; }
+      .cat-bar { padding-left: 20px; }
     }
     @media (max-width: 1200px) { .prods { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 900px) { .prods { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 700px) { .prods { grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 6px; } }
+    @media (max-width: 700px) { .prods { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 8px; } }
     .pc { background: #fff; border: none; border-radius: 8px; overflow: hidden; transition: box-shadow .2s; }
     .pc:hover { border-color: transparent; box-shadow: 0 4px 16px rgba(0,0,0,.1); }
     .pi { height: 200px; display: flex; align-items: center; justify-content: center; font-size: 80px; background: #f8f8f8; overflow: hidden; position: relative; }
@@ -543,7 +548,7 @@
       width: 36px; height: 36px;
       background: transparent; border: none;
       border-radius: var(--border-radius-md); cursor: pointer; flex-shrink: 0;
-      color: #fff;
+      color: #314021;
     }
     .mob-cart-btn:hover { background: transparent; }
     .mob-cart-badge {
@@ -561,7 +566,7 @@
       width: 36px; height: 36px;
       background: transparent; border: none;
       border-radius: var(--border-radius-md); cursor: pointer; flex-shrink: 0;
-      color: #fff;
+      color: #314021;
     }
     .mob-menu-btn:hover { background: transparent; }
 
@@ -653,7 +658,7 @@
       padding: 0;
       background: #f2f2f2;
       border-right: 1px solid #e0e0e0;
-      width: 200px;
+      width: 220px;
       box-shadow: none;
       overflow: hidden;
     }
@@ -818,26 +823,39 @@
 
     /* Mobile nav tweaks */
     @media (max-width: 600px) {
-      .nav { position: absolute; }
+      .nav {
+        position: sticky !important;
+        top: 0;
+        background: #f2f2f2 !important;
+        border-bottom: 1px solid #e0e0e0 !important;
+        box-shadow: none !important;
+        padding: 10px 16px !important;
+        gap: 8px;
+      }
       .logo-wrap { margin-right: auto; }
       .nav-right-group { margin-left: 0 !important; }
-      /* Shrink rate chip on mobile */
-      .rate-chip { font-size: 10px; padding: 3px 7px; max-width: 110px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-      /* Smaller hero on mobile */
-      .hero { min-height: 200px; border-radius: 0; }
+      /* Rate chip on mobile — compact, beside language */
+      .rate-chip { display: inline-flex !important; font-size: 10px; padding: 3px 8px; background: rgba(49,64,33,.07) !important; border-color: rgba(49,64,33,.15) !important; color: var(--color-text-secondary) !important; }
+      .rate-lbl-long { display: none !important; }
+      .rate-lbl-short { display: inline !important; }
+      /* Shrink lang dropdown on mobile */
+      .lang-dd-btn { font-size: 12px; }
+      /* Smaller hero on mobile with side gaps */
+      .hero { min-height: 200px; border-radius: 10px; }
       .hero h1 { font-size: 24px; }
       .hero p { font-size: 13px; }
       .hero-content { padding: 1.5rem; }
-      .hero-panel-wrap { margin-left: 0 !important; padding: 0 !important; }
-      .search-bar-wrap { margin-left: 0 !important; }
+      .hero-panel-wrap { margin-left: 0 !important; padding: 10px 12px 0 !important; }
+      /* Mobile search bar */
+      .search-bar-wrap { margin-left: 0 !important; padding: 10px 12px 6px !important; }
       /* Disable sidebar margin on mobile for cat-bar and products */
-      #cat-bar { margin-left: 0 !important; }
+      #cat-bar { margin-left: 0 !important; padding-left: 12px !important; }
       #mp { margin-left: 0 !important; }
       /* Product grid: 2-column on mobile */
       .prods {
         grid-template-columns: repeat(2, 1fr) !important;
-        gap: 6px;
-        padding: 6px;
+        gap: 8px;
+        padding: 8px 10px;
       }
       .pc {
         border-radius: 6px;
@@ -865,6 +883,8 @@
       .pgw { padding: 1rem; }
       /* Better touch targets for filter pills */
       .fpill { padding: 7px 14px; font-size: 13px; }
+      /* Cart and hamburger icons visible */
+      .mob-cart-btn, .mob-menu-btn { color: #314021; }
     }
   </style>
   <!-- Zeabur PostgreSQL REST adapter (replaces Supabase) -->
@@ -966,7 +986,7 @@
 <div id="lang-pick-overlay" class="lang-pick-overlay" style="display:none">
   <div class="lang-pick-card">
     <div class="lang-pick-logo">Netiva</div>
-    <div class="lang-pick-tagline">Excellence In Action · 追求卓越</div>
+    <div class="lang-pick-tagline">追求卓越</div>
     <div class="lang-pick-label">Choose your language · 选择语言 · 選擇語言</div>
     <div class="lang-pick-options">
       <button class="lang-pick-btn" onclick="pickLang('en')">
@@ -999,7 +1019,7 @@
   <!-- Logo at top -->
   <div class="side-tab-logo-wrap" onclick="go('shop')">
     <div class="side-tab-logo-text">Netiva</div>
-    <div class="side-tab-logo-sub">Excellence In Action</div>
+
   </div>
 
   <!-- Main nav items -->
@@ -1055,22 +1075,14 @@
 </div>
 
 <nav class="nav" id="main-nav">
-  <div class="logo-wrap" onclick="go('shop')" style="cursor:pointer;display:none">
-    <span class="logo">Netiva</span>
-  </div>
-
-  <!-- Search bar — centred in top nav -->
-  <div class="nav-search-wrap">
-    <input id="search-input" class="nav-search-input" type="text" placeholder="Search products…" value="" oninput="onSearch(this.value)">
-    <button class="nav-search-btn" onclick="">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14"/></svg>
-    </button>
+  <div class="logo-wrap" onclick="go('shop')">
+    <span class="logo-mob">Netiva</span>
   </div>
 
   <!-- Right side controls -->
-  <div class="nav-right-group" style="display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0">
+  <div class="nav-right-group" style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0">
     <!-- Rate chip -->
-    <div class="rate-chip" style="background:rgba(49,64,33,.08);border-color:rgba(49,64,33,.15);color:var(--color-text-secondary)"><span class="rate-dot loading" id="rdot"></span><span id="rlbl">...</span></div>
+    <div class="rate-chip" style="background:rgba(49,64,33,.08);border-color:rgba(49,64,33,.15);color:var(--color-text-secondary)"><span class="rate-dot loading" id="rdot"></span><span id="rlbl" class="rate-lbl-long">...</span><span id="rlbl-short" class="rate-lbl-short" style="display:none">...</span></div>
 
     <!-- Language dropdown -->
     <div class="lang-dd" id="lang-dd">
@@ -2002,12 +2014,13 @@ async function fetchRate(){
       rate=d.rates.CNY;
       const ts=new Date(d.time_last_update_utc).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',month:'numeric',day:'numeric'});
       if(dot){dot.classList.remove('loading');dot.className='rate-dot live';}
-      if(lbl)lbl.textContent='1 USD = ¥'+rate.toFixed(4)+' · '+ts;
+      if(lbl){lbl.textContent='1 USD = ¥'+rate.toFixed(4)+' · '+ts;}
+      const ls=document.getElementById('rlbl-short');if(ls)ls.textContent='$1=¥'+rate.toFixed(2);
       document.querySelectorAll('[data-usd]').forEach(el=>el.textContent=cny(parseFloat(el.dataset.usd)));
     }else throw 0;
   }catch(e){
-    try{const r2=await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');const d2=await r2.json();rate=d2.usd.cny;if(dot)dot.classList.remove('loading');if(lbl)lbl.textContent='1 USD = ¥'+rate.toFixed(4);document.querySelectorAll('[data-usd]').forEach(el=>el.textContent=cny(parseFloat(el.dataset.usd)));}
-    catch(e2){rate=7.25;if(dot)dot.classList.remove('loading');if(lbl)lbl.textContent='1 USD = ¥'+rate.toFixed(4)+' (ref.)';}
+    try{const r2=await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');const d2=await r2.json();rate=d2.usd.cny;if(dot)dot.classList.remove('loading');if(lbl)lbl.textContent='1 USD = ¥'+rate.toFixed(4);const ls2=document.getElementById('rlbl-short');if(ls2)ls2.textContent='$1=¥'+rate.toFixed(2);document.querySelectorAll('[data-usd]').forEach(el=>el.textContent=cny(parseFloat(el.dataset.usd)));}
+    catch(e2){rate=7.25;if(dot)dot.classList.remove('loading');if(lbl)lbl.textContent='1 USD = ¥'+rate.toFixed(4)+' (ref.)';const ls3=document.getElementById('rlbl-short');if(ls3)ls3.textContent='$1=¥'+rate.toFixed(2);}
   }
 }
 
@@ -2252,17 +2265,30 @@ function rShop(r){
     </div>
   </div>`:'' ;
   r.innerHTML=`
+  <!-- Taobao-style search bar above hero -->
+  <div class="search-bar-wrap" style="margin-left:240px;padding:14px 28px 10px;display:flex;justify-content:center;">
+    <div style="display:flex;align-items:center;width:100%;max-width:680px;background:#fff;border-radius:999px;border:2px solid #4a7c2f;box-shadow:0 2px 12px rgba(74,124,47,0.13);overflow:hidden;">
+      <div style="display:flex;align-items:center;padding:0 14px;color:#bbb;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#4a7c2f" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14"/></svg>
+      </div>
+      <input id="search-input" type="text" placeholder="${lang==='zh'?'搜索商品…':lang==='zht'?'搜尋商品…':'Search products…'}" value="" oninput="onSearch(this.value)"
+        style="flex:1;border:none;outline:none;font-size:15px;padding:11px 4px;background:transparent;color:#333;font-family:var(--font-sans);">
+      <button onclick="" style="padding:10px 28px;background:#4a7c2f;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;border-radius:0 999px 999px 0;font-family:var(--font-sans);letter-spacing:.01em;transition:background .15s;flex-shrink:0;" onmouseover="this.style.background='#3a6324'" onmouseout="this.style.background='#4a7c2f'">
+        ${lang==='zh'?'搜索':lang==='zht'?'搜尋':'Search'}
+      </button>
+    </div>
+  </div>
   <!-- Hero panel: white card inside grey content area -->
-  <div style="padding:12px 12px 0;margin-left:200px" class="hero-panel-wrap" id="hero-panel-wrap">
+  <div style="padding:4px 28px 0;margin-left:240px" class="hero-panel-wrap" id="hero-panel-wrap">
     <div style="border-radius:10px;overflow:hidden;position:relative">
       <div class="${heroClass}" style="position:relative">${heroBg}${adminHeroBar}<div class="hero-content"><h1>${heroTitle}</h1><p>${heroSub}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn p" style="font-size:13px;padding:7px 18px" onclick="document.getElementById('mp').scrollIntoView({behavior:'smooth'})">${t('shopNow')}</button>${!db.cur?`<button class="btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4);color:#fff;font-size:13px;padding:7px 18px" onclick="go('reg')">${t('registerWithCode')}</button>`:''}</div></div></div>
     </div>
   </div>
-  <div class="cat-bar" id="cat-bar" style="margin-left:200px;padding-top:12px">
+  <div class="cat-bar" id="cat-bar" style="margin-left:240px;padding-top:12px;padding-left:28px">
     <button class="cat-pill${selectedCat===''?' on':''}" onclick="onCat('')">${lang==='zh'?'全部':lang==='zht'?'全部':'All'}</button>
     ${CATEGORIES.map(c=>`<button class="cat-pill${selectedCat===c.id?' on':''}" onclick="onCat('${c.id}')">${lang==='zh'?c.zh:lang==='zht'?c.zht:c.en}</button>`).join('')}
   </div>
-  <div class="prods" id="mp" style="margin-left:200px"></div>`;
+  <div class="prods" id="mp" style="margin-left:240px"></div>`;
   rShopProducts();
 }
 function toggleHeroEdit(){
