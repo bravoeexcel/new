@@ -179,14 +179,15 @@
     .tag { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--color-accent-light); color: var(--color-accent); margin-bottom: 6px; border: 1px solid #b8d4a8; }
 
     /* ── Full-page product detail view ── */
-    .pdp { display: none; }
+    .pdp { display: none; margin-left: 220px; }
     .pdp.active { display: block; }
-    .pdp-top-bar { display: flex; align-items: center; gap: 12px; padding: 14px 2rem; border-bottom: 1px solid var(--color-border-tertiary); background: rgba(250,250,248,.95); backdrop-filter: blur(12px); position: sticky; top: 65px; z-index: 40; }
+    @media (max-width: 600px) { .pdp { margin-left: 0; } }
+    .pdp-top-bar { display: flex; align-items: center; gap: 12px; padding: 14px 2rem; border-bottom: 1px solid var(--color-border-tertiary); background: rgba(250,250,248,.95); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 40; }
     .pdp-back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-text-secondary); cursor: pointer; background: none; border: none; padding: 0; font-weight: 500; }
     .pdp-back:hover { color: var(--color-accent); }
     .pdp-breadcrumb { font-size: 13px; color: var(--color-text-secondary); }
     .pdp-layout { display: grid; grid-template-columns: 1fr 1fr; min-height: calc(100vh - 120px); }
-    .pdp-gallery-col { position: sticky; top: 104px; height: calc(100vh - 104px); background: var(--color-background-secondary); display: flex; flex-direction: column; overflow: hidden; }
+    .pdp-gallery-col { position: sticky; top: 53px; height: calc(100vh - 53px); background: var(--color-background-secondary); display: flex; flex-direction: column; overflow: hidden; }
     .pdp-main-img-wrap { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--color-background-secondary); }
     .pdp-main-img { width: 100%; height: 100%; object-fit: contain; display: block; padding: 2rem; }
     .pdp-main-emoji { font-size: 120px; }
