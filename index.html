@@ -2713,6 +2713,8 @@ function go(v){vw=v;closeCart();editingRefId=null;editingProdId=null;if(v!=='sho
   render();}
 function render(){
   const r=document.getElementById('root');
+  const _formViews=['reg','login','acc','admin-login','checkout'];
+  if(_formViews.includes(vw)&&r.querySelector('#rc,#le,#en,#a-email,#c-name,#c-email')){return;}
   if(vw==='shop')rShop(r);else if(vw==='checkout')rCheckout(r);else if(vw==='reg')rReg(r);else if(vw==='login')rLogin(r);else if(vw==='acc')rAcc(r);else if(vw==='admin-login')rAdmLogin(r);else if(vw==='admin')rAdm(r);
   else if(vw.startsWith('pdp:')){const id=vw.slice(4);rPDP(id);}
 }
