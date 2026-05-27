@@ -889,6 +889,8 @@
   </style>
   <!-- Zeabur PostgreSQL REST adapter (replaces Supabase) -->
   <script>
+  // Ensure window._fb exists before DOMContentLoaded tries to attach to it
+  window._fb = window._fb || { fsdb:null, storeDoc:null, setDoc:null, getDoc:null, onSnapshot:null, doc:null };
   // REST adapter — calls /api/doc/:id on the Node.js backend.
   // No SDK needed. Polling replaces Supabase Realtime.
   window.addEventListener('DOMContentLoaded', function(){
@@ -1411,6 +1413,447 @@ const DB_DEFAULTS = {
 
 let db = {...DB_DEFAULTS, products:[...DEFAULT_PRODS]};
 
+// ── Carousel slide defaults ───────────────────────────────────────────────
+function getCarouselSlides(){
+  if(db.carouselSlides&&db.carouselSlides.length===4) return db.carouselSlides;
+  return [
+    {badge:'',title_en:'Excellence In Action',title_zh:'追求卓越',title_zht:'追求卓越',sub_en:'Since 1987',sub_zh:'自1987年以来',sub_zht:'自1987年以來',btn_en:'Shop Now',btn_zh:'立即选购',btn_zht:'立即選購',btnAction:'shop',bg:'',theme:'dark'},
+    {badge_en:'WELLNESS',badge_zh:'健康养生',badge_zht:'健康養生',title_en:'Natural & Pure',title_zh:'自然·纯粹',title_zht:'自然·純粹',sub_en:'Premium wellness supplements crafted from nature. Nourish your body, every day.',sub_zh:'精选天然保健品，每天呵护您的身体',sub_zht:'精選天然保健品，每天呵護您的身體',btn_en:'Shop Wellness',btn_zh:'选购保健品',btn_zht:'選購保健品',btnAction:'shop',bg:'',theme:'light'},
+    {badge_en:'MEMBERS ONLY',badge_zh:'会员专享',badge_zht:'會員專享',title_en:'Exclusive Member Deals',title_zh:'专属会员优惠',title_zht:'專屬會員優惠',sub_en:'Join today for member-only pricing, priority service, and exclusive rewards.',sub_zh:'立即注册，享受会员专属折扣、优先服务及专属奖励',sub_zht:'立即註冊，享受會員專屬折扣、優先服務及專屬獎勵',btn_en:'Register Free',btn_zh:'免费注册',btn_zht:'免費註冊',btnAction:'reg',bg:'',theme:'dark'},
+    {badge_en:'SEASONAL SALE',badge_zh:'季节特惠',badge_zht:'季節特惠',title_en:'Summer Vitality',title_zh:'活力一夏',title_zht:'活力一夏',sub_en:'Handpicked seasonal health products to keep you energised all summer long.',sub_zh:'精选夏季养生产品，为您补充满满能量',sub_zht:'精選夏季養生產品，為您補充滿滿能量',btn_en:'View Offers',btn_zh:'查看特惠',btn_zht:'查看特惠',btnAction:'shop',bg:'',theme:'warm'},
+  ];
+}
+
+// Per-slide right-panel SVG artwork — ad-style split banner
+const _slideArtwork = [
+  // Slide 0 — brand hero: fresh fruit & veggie abundance (dark forest green)
+  `<svg viewBox="0 0 280 260" xmlns="http://www.w3.org/2000/svg" width="280" height="260">
+    <defs>
+      <radialGradient id="sg0a" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#6ab83a" stop-opacity=".38"/><stop offset="100%" stop-color="#0d1a08" stop-opacity="0"/></radialGradient>
+      <radialGradient id="sg0apple" cx="38%" cy="28%" r="60%"><stop offset="0%" stop-color="#ff6b6b" stop-opacity=".95"/><stop offset="100%" stop-color="#cc2200" stop-opacity=".8"/></radialGradient>
+      <radialGradient id="sg0lemon" cx="35%" cy="30%" r="60%"><stop offset="0%" stop-color="#ffe566" stop-opacity=".95"/><stop offset="100%" stop-color="#e8b800" stop-opacity=".8"/></radialGradient>
+      <radialGradient id="sg0grape" cx="40%" cy="30%" r="60%"><stop offset="0%" stop-color="#c084fc" stop-opacity=".9"/><stop offset="100%" stop-color="#7e22ce" stop-opacity=".7"/></radialGradient>
+      <radialGradient id="sg0carrot" cx="35%" cy="25%" r="65%"><stop offset="0%" stop-color="#fb923c" stop-opacity=".95"/><stop offset="100%" stop-color="#c2410c" stop-opacity=".8"/></radialGradient>
+      <radialGradient id="sg0broc" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#4ade80" stop-opacity=".9"/><stop offset="100%" stop-color="#166534" stop-opacity=".7"/></radialGradient>
+    </defs>
+    <!-- ambient glow -->
+    <ellipse cx="140" cy="132" rx="122" ry="118" fill="url(#sg0a)"/>
+
+    <!-- APPLE — top centre, large -->
+    <g transform="translate(140,80)">
+      <ellipse cx="0" cy="4" rx="30" ry="32" fill="url(#sg0apple)"/>
+      <!-- shine highlight -->
+      <ellipse cx="-10" cy="-8" rx="8" ry="11" fill="rgba(255,255,255,.22)" transform="rotate(-20)"/>
+      <!-- stem -->
+      <path d="M2,-28 Q4,-38 10,-36" fill="none" stroke="rgba(100,60,20,.8)" stroke-width="2" stroke-linecap="round"/>
+      <!-- leaf -->
+      <path d="M8,-34 C14,-40 22,-36 18,-30 C14,-28 8,-30 8,-34Z" fill="rgba(100,220,60,.75)" stroke="rgba(60,180,30,.6)" stroke-width=".8"/>
+    </g>
+
+    <!-- LEMON — left mid -->
+    <g transform="translate(76,130)">
+      <ellipse cx="0" cy="0" rx="24" ry="20" fill="url(#sg0lemon)" transform="rotate(-20)"/>
+      <ellipse cx="-7" cy="-6" rx="6" ry="8" fill="rgba(255,255,255,.2)" transform="rotate(-20)"/>
+      <!-- nub left -->
+      <ellipse cx="-22" cy="4" rx="5" ry="4" fill="rgba(240,200,40,.7)" transform="rotate(-20)"/>
+      <!-- nub right -->
+      <ellipse cx="22" cy="-4" rx="5" ry="4" fill="rgba(240,200,40,.7)" transform="rotate(-20)"/>
+    </g>
+
+    <!-- GRAPES — top left cluster -->
+    <g transform="translate(82,66)">
+      <circle cx="0" cy="0" r="10" fill="url(#sg0grape)"/>
+      <circle cx="14" cy="-4" r="10" fill="url(#sg0grape)" opacity=".9"/>
+      <circle cx="7" cy="13" r="10" fill="url(#sg0grape)" opacity=".85"/>
+      <circle cx="-7" cy="13" r="10" fill="url(#sg0grape)" opacity=".88"/>
+      <circle cx="21" cy="10" r="10" fill="url(#sg0grape)" opacity=".8"/>
+      <!-- shine on each grape -->
+      <circle cx="-3" cy="-3" r="3" fill="rgba(255,255,255,.25)"/>
+      <circle cx="11" cy="-7" r="3" fill="rgba(255,255,255,.22)"/>
+      <circle cx="4" cy="10" r="3" fill="rgba(255,255,255,.2)"/>
+      <!-- stem -->
+      <path d="M7,-10 Q8,-22 14,-24" fill="none" stroke="rgba(100,50,10,.7)" stroke-width="1.8" stroke-linecap="round"/>
+      <!-- vine leaf -->
+      <path d="M11,-22 C16,-30 26,-28 22,-20 C18,-16 11,-18 11,-22Z" fill="rgba(100,210,50,.65)" stroke="rgba(60,170,30,.5)" stroke-width=".8"/>
+    </g>
+
+    <!-- CARROT — bottom left, diagonal -->
+    <g transform="translate(82,196) rotate(-30)">
+      <!-- body -->
+      <path d="M0,-48 C14,-44 16,-20 10,16 Q0,28 -10,16 C-16,-20 -14,-44 0,-48Z" fill="url(#sg0carrot)"/>
+      <ellipse cx="-4" cy="-30" rx="4" ry="10" fill="rgba(255,255,255,.18)" transform="rotate(-10)"/>
+      <!-- rings -->
+      <line x1="-10" y1="-20" x2="10" y2="-16" stroke="rgba(200,80,0,.35)" stroke-width="1"/>
+      <line x1="-11" y1="-4" x2="11" y2="0" stroke="rgba(200,80,0,.3)" stroke-width="1"/>
+      <line x1="-10" y1="10" x2="10" y2="14" stroke="rgba(200,80,0,.28)" stroke-width=".9"/>
+      <!-- greens -->
+      <path d="M0,-48 C-6,-62 -14,-68 -10,-58 C-6,-52 -2,-50 0,-48Z" fill="rgba(80,200,40,.75)" stroke="rgba(40,160,20,.5)" stroke-width=".8"/>
+      <path d="M0,-48 C2,-64 10,-72 8,-60 C4,-52 2,-50 0,-48Z" fill="rgba(90,210,50,.7)" stroke="rgba(40,160,20,.5)" stroke-width=".8"/>
+      <path d="M0,-48 C8,-58 18,-60 14,-50 C10,-44 4,-46 0,-48Z" fill="rgba(85,205,45,.72)" stroke="rgba(40,160,20,.5)" stroke-width=".8"/>
+    </g>
+
+    <!-- BROCCOLI — right side -->
+    <g transform="translate(206,148)">
+      <!-- stem -->
+      <rect x="-6" y="10" width="12" height="36" rx="5" fill="rgba(100,200,60,.55)" stroke="rgba(60,160,30,.4)" stroke-width="1"/>
+      <!-- floret base circle -->
+      <circle cx="0" cy="0" r="30" fill="url(#sg0broc)" opacity=".88"/>
+      <!-- floret bumps -->
+      <circle cx="-14" cy="-10" r="14" fill="rgba(60,200,80,.7)"/>
+      <circle cx="14" cy="-10" r="14" fill="rgba(50,190,70,.7)"/>
+      <circle cx="0" cy="-18" r="14" fill="rgba(70,210,90,.75)"/>
+      <circle cx="-20" cy="4" r="10" fill="rgba(55,195,75,.65)"/>
+      <circle cx="20" cy="4" r="10" fill="rgba(50,190,70,.65)"/>
+      <!-- highlights -->
+      <circle cx="-14" cy="-16" r="4" fill="rgba(200,255,180,.3)"/>
+      <circle cx="14" cy="-16" r="4" fill="rgba(200,255,180,.28)"/>
+      <circle cx="0" cy="-24" r="4" fill="rgba(200,255,180,.32)"/>
+    </g>
+
+    <!-- SMALL CHERRY pair — top right -->
+    <g transform="translate(216,74)">
+      <circle cx="-8" cy="0" r="10" fill="rgba(220,30,50,.85)"/>
+      <circle cx="8" cy="2" r="10" fill="rgba(200,20,40,.85)"/>
+      <circle cx="-11" cy="-4" r="3" fill="rgba(255,255,255,.28)"/>
+      <circle cx="5" cy="-4" r="3" fill="rgba(255,255,255,.24)"/>
+      <!-- stems -->
+      <path d="M-8,-10 Q-4,-26 4,-28" fill="none" stroke="rgba(80,40,10,.7)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M8,-8 Q10,-22 4,-28" fill="none" stroke="rgba(80,40,10,.7)" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- leaf -->
+      <path d="M0,-26 C-6,-34 -16,-30 -12,-22 C-8,-18 0,-22 0,-26Z" fill="rgba(80,200,40,.7)" stroke="rgba(40,150,20,.5)" stroke-width=".8"/>
+    </g>
+
+    <!-- sparkle accent dots -->
+    <circle cx="122" cy="188" r="2.5" fill="rgba(255,255,200,.7)"/>
+    <circle cx="170" cy="210" r="2" fill="rgba(220,255,180,.65)"/>
+    <circle cx="56" cy="98" r="2" fill="rgba(255,240,160,.6)"/>
+    <circle cx="238" cy="120" r="2" fill="rgba(220,255,180,.55)"/>
+  </svg>`,
+
+  // Slide 1 — Natural & Pure: lush botanical with mortar & pestle + floating veggie/herb icons, bright greens
+  `<svg viewBox="0 0 280 260" xmlns="http://www.w3.org/2000/svg" width="280" height="260">
+    <defs>
+      <radialGradient id="sg1a" cx="52%" cy="48%" r="55%"><stop offset="0%" stop-color="#a8e060" stop-opacity=".45"/><stop offset="100%" stop-color="#1a4008" stop-opacity="0"/></radialGradient>
+      <radialGradient id="sg1b" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#d4f7a0" stop-opacity=".8"/><stop offset="100%" stop-color="#80c840" stop-opacity=".4"/></radialGradient>
+    </defs>
+    <ellipse cx="144" cy="132" rx="118" ry="116" fill="url(#sg1a)"/>
+    <!-- central large leaf cluster -->
+    <g transform="translate(148,125)">
+      <!-- main upright leaf -->
+      <path d="M0,-108 C50,-72 54,-18 0,108 C-54,-18 -50,-72 0,-108Z" fill="rgba(140,225,70,.22)" stroke="rgba(200,250,140,.5)" stroke-width="1.8"/>
+      <line x1="0" y1="-105" x2="0" y2="105" stroke="rgba(200,250,140,.6)" stroke-width="1.6"/>
+      <line x1="0" y1="-62" x2="38" y2="-28" stroke="rgba(200,250,140,.38)" stroke-width="1.1"/>
+      <line x1="0" y1="-62" x2="-38" y2="-28" stroke="rgba(200,250,140,.38)" stroke-width="1.1"/>
+      <line x1="0" y1="-14" x2="42" y2="14" stroke="rgba(200,250,140,.32)" stroke-width="1"/>
+      <line x1="0" y1="-14" x2="-42" y2="14" stroke="rgba(200,250,140,.32)" stroke-width="1"/>
+      <line x1="0" y1="40" x2="28" y2="58" stroke="rgba(200,250,140,.25)" stroke-width=".9"/>
+      <line x1="0" y1="40" x2="-28" y2="58" stroke="rgba(200,250,140,.25)" stroke-width=".9"/>
+    </g>
+    <!-- wide leaf fanning left -->
+    <g transform="translate(88,152) rotate(52)">
+      <path d="M0,-70 C32,-48 34,-12 0,70 C-34,-12 -32,-48 0,-70Z" fill="rgba(120,210,60,.2)" stroke="rgba(180,245,110,.42)" stroke-width="1.2"/>
+      <line x1="0" y1="-68" x2="0" y2="68" stroke="rgba(180,245,110,.48)" stroke-width="1.1"/>
+      <line x1="0" y1="-28" x2="22" y2="-6" stroke="rgba(180,245,110,.3)" stroke-width=".8"/>
+      <line x1="0" y1="-28" x2="-22" y2="-6" stroke="rgba(180,245,110,.3)" stroke-width=".8"/>
+    </g>
+    <!-- curved leaf right -->
+    <g transform="translate(210,88) rotate(-48)">
+      <path d="M0,-56 C26,-38 28,-10 0,56 C-28,-10 -26,-38 0,-56Z" fill="rgba(130,218,65,.18)" stroke="rgba(185,248,115,.4)" stroke-width="1"/>
+      <line x1="0" y1="-54" x2="0" y2="54" stroke="rgba(185,248,115,.45)" stroke-width="1"/>
+    </g>
+    <!-- tiny sprig bottom left -->
+    <g transform="translate(68,200) rotate(20)">
+      <path d="M0,0 C-10,-20 -6,-38 0,-44 C6,-38 10,-20 0,0Z" fill="rgba(160,235,90,.28)" stroke="rgba(195,250,130,.5)" stroke-width=".9"/>
+      <line x1="0" y1="0" x2="0" y2="-43" stroke="rgba(195,250,130,.5)" stroke-width=".9"/>
+    </g>
+    <!-- mortar & pestle icon -->
+    <g transform="translate(210,188)">
+      <ellipse cx="0" cy="6" rx="24" ry="10" fill="rgba(255,255,255,.1)" stroke="rgba(220,255,170,.55)" stroke-width="1.4"/>
+      <path d="M-20,6 Q0,-10 20,6" fill="rgba(200,250,140,.12)" stroke="rgba(220,255,170,.5)" stroke-width="1.2"/>
+      <line x1="-4" y1="6" x2="12" y2="-14" stroke="rgba(220,255,170,.6)" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="12" cy="-15" r="4" fill="rgba(200,250,140,.35)" stroke="rgba(220,255,170,.6)" stroke-width="1"/>
+    </g>
+    <!-- sparkles -->
+    <circle cx="96" cy="72" r="4" fill="rgba(240,255,200,.8)"/>
+    <circle cx="208" cy="198" r="3" fill="rgba(210,250,155,.7)"/>
+    <circle cx="70" cy="118" r="2.5" fill="rgba(225,255,175,.65)"/>
+    <circle cx="222" cy="118" r="2" fill="rgba(220,255,168,.6)"/>
+    <circle cx="164" cy="220" r="2" fill="rgba(210,248,152,.55)"/>
+  </svg>`,
+
+  // Slide 2 — Members Only: single bold capsule pill, centred, clean
+  `<svg viewBox="0 0 280 260" xmlns="http://www.w3.org/2000/svg" width="280" height="260">
+    <defs>
+      <radialGradient id="sg2a" cx="50%" cy="48%" r="52%"><stop offset="0%" stop-color="#5cb82e" stop-opacity=".4"/><stop offset="100%" stop-color="#0d1f08" stop-opacity="0"/></radialGradient>
+      <linearGradient id="sg2pill" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="rgba(230,255,190,.65)"/>
+        <stop offset="45%" stop-color="rgba(180,245,120,.35)"/>
+        <stop offset="100%" stop-color="rgba(100,200,50,.18)"/>
+      </linearGradient>
+      <linearGradient id="sg2pillA" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="rgba(240,255,200,.7)"/>
+        <stop offset="100%" stop-color="rgba(160,235,90,.4)"/>
+      </linearGradient>
+      <linearGradient id="sg2pillB" x1="100%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="rgba(200,250,140,.5)"/>
+        <stop offset="100%" stop-color="rgba(120,210,60,.25)"/>
+      </linearGradient>
+    </defs>
+    <!-- ambient glow -->
+    <ellipse cx="140" cy="130" rx="120" ry="118" fill="url(#sg2a)"/>
+    <!-- subtle dashed orbit ring -->
+    <ellipse cx="140" cy="130" rx="104" ry="104" fill="none" stroke="rgba(168,230,110,.18)" stroke-width="1" stroke-dasharray="5 6"/>
+
+    <!-- MAIN PILL — large, horizontal, centred, slightly tilted -->
+    <g transform="translate(140,130) rotate(-8)">
+      <!-- outer shell -->
+      <rect x="-78" y="-32" width="156" height="64" rx="32" fill="url(#sg2pill)" stroke="rgba(200,250,145,.7)" stroke-width="2.5"/>
+      <!-- dividing line down the middle -->
+      <line x1="0" y1="-30" x2="0" y2="30" stroke="rgba(200,250,145,.55)" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <!-- left half highlight -->
+      <rect x="-76" y="-30" width="74" height="60" rx="30" fill="url(#sg2pillA)" opacity=".4"/>
+      <!-- right half fill -->
+      <rect x="2" y="-30" width="74" height="60" rx="30" fill="url(#sg2pillB)" opacity=".35"/>
+      <!-- top shine streak -->
+      <ellipse cx="-28" cy="-18" rx="28" ry="8" fill="rgba(255,255,255,.18)" transform="rotate(-8)"/>
+      <!-- subtle inner rim -->
+      <rect x="-74" y="-28" width="148" height="56" rx="28" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+    </g>
+
+    <!-- small glow dots around pill -->
+    <circle cx="72" cy="106" r="4" fill="rgba(200,250,145,.5)"/>
+    <circle cx="210" cy="158" r="4" fill="rgba(200,250,145,.45)"/>
+    <circle cx="98" cy="188" r="2.8" fill="rgba(220,255,165,.55)"/>
+    <circle cx="192" cy="78" r="2.8" fill="rgba(220,255,165,.5)"/>
+    <circle cx="58" cy="148" r="2" fill="rgba(200,250,145,.4)"/>
+    <circle cx="226" cy="112" r="2" fill="rgba(200,250,145,.4)"/>
+  </svg>`,
+
+  // Slide 3 — Summer Vitality: warm radiant sun, bold citrus cross-sections, amber wave + energy sparks
+  `<svg viewBox="0 0 280 260" xmlns="http://www.w3.org/2000/svg" width="280" height="260">
+    <defs>
+      <radialGradient id="sg3a" cx="50%" cy="44%" r="54%"><stop offset="0%" stop-color="#FFCC44" stop-opacity=".55"/><stop offset="100%" stop-color="#8B2800" stop-opacity="0"/></radialGradient>
+      <radialGradient id="sg3sun" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FFE880" stop-opacity=".95"/><stop offset="70%" stop-color="#FFB820" stop-opacity=".7"/><stop offset="100%" stop-color="#FF8000" stop-opacity="0"/></radialGradient>
+      <radialGradient id="sg3cit" cx="40%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFD060" stop-opacity=".9"/><stop offset="100%" stop-color="#FF7800" stop-opacity=".4"/></radialGradient>
+    </defs>
+    <ellipse cx="138" cy="120" rx="122" ry="116" fill="url(#sg3a)"/>
+    <!-- large sun glow halos -->
+    <circle cx="140" cy="106" r="88" fill="rgba(255,200,40,.1)"/>
+    <circle cx="140" cy="106" r="66" fill="rgba(255,215,60,.18)"/>
+    <circle cx="140" cy="106" r="46" fill="rgba(255,230,80,.28)"/>
+    <circle cx="140" cy="106" r="30" fill="url(#sg3sun)"/>
+    <!-- sun rays — 12 rays -->
+    <g transform="translate(140,106)" stroke="#FFAA18" stroke-linecap="round">
+      <line x1="0" y1="-88" x2="0" y2="-68" stroke-width="3.5"/>
+      <line x1="0" y1="68" x2="0" y2="88" stroke-width="3.5"/>
+      <line x1="-88" y1="0" x2="-68" y2="0" stroke-width="3.5"/>
+      <line x1="68" y1="0" x2="88" y2="0" stroke-width="3.5"/>
+      <line x1="-63" y1="-63" x2="-49" y2="-49" stroke-width="3"/>
+      <line x1="49" y1="-49" x2="63" y2="-63" stroke-width="3"/>
+      <line x1="-63" y1="63" x2="-49" y2="49" stroke-width="3"/>
+      <line x1="49" y1="49" x2="63" y2="63" stroke-width="3"/>
+      <line x1="-84" y1="-34" x2="-66" y2="-27" stroke-width="2.2"/>
+      <line x1="66" y1="-27" x2="84" y2="-34" stroke-width="2.2"/>
+      <line x1="-84" y1="34" x2="-66" y2="27" stroke-width="2.2"/>
+      <line x1="66" y1="27" x2="84" y2="34" stroke-width="2.2"/>
+    </g>
+    <!-- large citrus slice bottom-left -->
+    <g transform="translate(72,200)">
+      <circle cx="0" cy="0" r="36" fill="url(#sg3cit)" opacity=".85" stroke="rgba(255,200,80,.6)" stroke-width="1.5"/>
+      <circle cx="0" cy="0" r="27" fill="rgba(255,230,100,.3)"/>
+      <circle cx="0" cy="0" r="7" fill="rgba(255,245,150,.6)"/>
+      <line x1="0" y1="-27" x2="0" y2="27" stroke="rgba(255,255,160,.55)" stroke-width="1.2"/>
+      <line x1="-27" y1="0" x2="27" y2="0" stroke="rgba(255,255,160,.55)" stroke-width="1.2"/>
+      <line x1="-19" y1="-19" x2="19" y2="19" stroke="rgba(255,255,160,.42)" stroke-width="1"/>
+      <line x1="19" y1="-19" x2="-19" y2="19" stroke="rgba(255,255,160,.42)" stroke-width="1"/>
+    </g>
+    <!-- medium citrus slice top-right -->
+    <g transform="translate(214,52)">
+      <circle cx="0" cy="0" r="26" fill="url(#sg3cit)" opacity=".75" stroke="rgba(255,195,60,.5)" stroke-width="1.2"/>
+      <circle cx="0" cy="0" r="19" fill="rgba(255,225,90,.25)"/>
+      <circle cx="0" cy="0" r="5" fill="rgba(255,245,140,.55)"/>
+      <line x1="0" y1="-19" x2="0" y2="19" stroke="rgba(255,255,150,.5)" stroke-width="1"/>
+      <line x1="-19" y1="0" x2="19" y2="0" stroke="rgba(255,255,150,.5)" stroke-width="1"/>
+      <line x1="-13" y1="-13" x2="13" y2="13" stroke="rgba(255,255,150,.38)" stroke-width=".9"/>
+      <line x1="13" y1="-13" x2="-13" y2="13" stroke="rgba(255,255,150,.38)" stroke-width=".9"/>
+    </g>
+    <!-- small citrus slice mid-right -->
+    <g transform="translate(234,158)">
+      <circle cx="0" cy="0" r="18" fill="rgba(255,170,30,.45)" stroke="rgba(255,200,70,.45)" stroke-width="1"/>
+      <circle cx="0" cy="0" r="13" fill="rgba(255,200,70,.2)"/>
+      <line x1="0" y1="-13" x2="0" y2="13" stroke="rgba(255,245,130,.45)" stroke-width=".9"/>
+      <line x1="-13" y1="0" x2="13" y2="0" stroke="rgba(255,245,130,.45)" stroke-width=".9"/>
+    </g>
+    <!-- energy spark bolts -->
+    <g fill="none" stroke="#FFD040" stroke-linecap="round" stroke-linejoin="round" opacity=".7">
+      <polyline points="58,72 52,84 60,84 54,98" stroke-width="2.2"/>
+      <polyline points="226,198 220,210 228,210 222,224" stroke-width="1.8"/>
+    </g>
+    <!-- warm wave bottom -->
+    <path d="M20,242 Q60,226 104,236 Q148,246 192,230 Q236,214 268,226" fill="none" stroke="rgba(255,190,50,.45)" stroke-width="2" stroke-linecap="round"/>
+    <!-- accent dots -->
+    <circle cx="100" cy="58" r="4" fill="rgba(255,240,120,.8)"/>
+    <circle cx="58" cy="152" r="2.5" fill="rgba(255,220,80,.65)"/>
+    <circle cx="176" cy="226" r="2.5" fill="rgba(255,210,70,.6)"/>
+  </svg>`,
+];
+
+function buildCarouselSlidesHtml(heroImg, heroTitle, heroSub, adminHeroBar){
+  const slides = getCarouselSlides();
+  return slides.map((s, i) => {
+    const bg = i === 0 ? (s.bg || heroImg || '') : (s.bg || '');
+    const title = i === 0
+      ? (db.heroTextTitle || (lang==='zh'? s.title_zh : lang==='zht'? s.title_zht : s.title_en) || heroTitle)
+      : (lang==='zh'? s.title_zh : lang==='zht'? s.title_zht : s.title_en);
+    const sub = i === 0
+      ? (db.heroTextSub || (lang==='zh'? s.sub_zh : lang==='zht'? s.sub_zht : s.sub_en) || heroSub)
+      : (lang==='zh'? s.sub_zh : lang==='zht'? s.sub_zht : s.sub_en);
+    const badge = lang==='zh'? (s.badge_zh||s.badge||'') : lang==='zht'? (s.badge_zht||s.badge||'') : (s.badge_en||s.badge||'');
+    const btn = lang==='zh'? (s.btn_zh||'立即选购') : lang==='zht'? (s.btn_zht||'立即選購') : (s.btn_en||'Shop Now');
+    const theme = s.theme || 'dark';
+
+    // Gradients — each slide has a distinct palette
+    const gradients = {
+      dark:  'linear-gradient(135deg,#0d1a08 0%,#1a2e10 40%,#243d18 70%,#1a3212 100%)',
+      light: 'linear-gradient(135deg,#1a3d0a 0%,#2d6b14 40%,#3d8c1e 70%,#52a82a 100%)',
+      warm:  'linear-gradient(135deg,#3d1400 0%,#7a2e00 40%,#b84d00 70%,#d4660a 100%)',
+    };
+    const gradientBg = gradients[theme] || gradients.dark;
+
+    // Ad-style accent colour per theme (for sale tag / pill badge bg)
+    const accentColors = {
+      dark:  {tag:'#FAC775', tagText:'#1a2608', btnBg:'rgba(250,199,117,.18)', btnBorder:'rgba(250,199,117,.75)', btnText:'#FAC775'},
+      light: {tag:'#d4f7a0', tagText:'#1a4008', btnBg:'rgba(212,247,160,.18)', btnBorder:'rgba(212,247,160,.75)', btnText:'#d4f7a0'},
+      warm:  {tag:'#FFD060', tagText:'#5c1a00', btnBg:'rgba(255,208,96,.18)', btnBorder:'rgba(255,208,96,.75)', btnText:'#FFD060'},
+    };
+    const ac = accentColors[theme] || accentColors.dark;
+
+    const adminEditBtn = db.adm ? `<div style="position:absolute;top:10px;right:10px;z-index:10;display:flex;gap:6px">
+      <button class="btn sm" style="background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-color:rgba(0,0,0,.12);font-size:12px;display:flex;align-items:center;gap:4px" onclick="event.stopPropagation();toggleSlideEdit(${i})">
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 2l2 2-7 7H3v-2L10 2z"/></svg>
+        ${lang==='en'?'Edit Slide':lang==='zht'?'編輯幻燈片':'编辑幻灯片'} ${i+1}
+      </button>
+    </div>
+    <div id="slide-edit-panel-${i}" style="display:none;position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:1.5rem">
+      <div style="background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:520px;box-shadow:0 8px 32px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <div style="font-size:15px;font-weight:500">${lang==='en'?'Edit Slide':lang==='zht'?'編輯幻燈片':'编辑幻灯片'} ${i+1}</div>
+          <button onclick="toggleSlideEdit(${i})" style="background:none;border:none;cursor:pointer;font-size:20px;color:#6b6a63;line-height:1;padding:0">×</button>
+        </div>
+        <div id="slide-edit-msg-${i}"></div>
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">${lang==='en'?'Badge / Label':lang==='zht'?'標籤':'标签'} (${lang==='en'?'EN':'英文'})</label>
+          <input type="text" id="se-badge-en-${i}" value="${s.badge_en||s.badge||''}" placeholder="e.g. WELLNESS" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">${lang==='en'?'Badge (中文)':'标签（中文）'}</label>
+            <input type="text" id="se-badge-zh-${i}" value="${s.badge_zh||''}" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">Badge (繁體)</label>
+            <input type="text" id="se-badge-zht-${i}" value="${s.badge_zht||''}" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px">
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">${lang==='en'?'Title (EN)':'标题（英文）'}</label>
+          <input type="text" id="se-title-en-${i}" value="${s.title_en||''}" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:14px;font-weight:500">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">Title (中文)</label>
+            <input type="text" id="se-title-zh-${i}" value="${s.title_zh||''}" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">Title (繁體)</label>
+            <input type="text" id="se-title-zht-${i}" value="${s.title_zht||''}" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px">
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">${lang==='en'?'Subtitle (EN)':'副标题（英文）'}</label>
+          <textarea id="se-sub-en-${i}" rows="2" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px;resize:vertical">${s.sub_en||''}</textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">Subtitle (中文)</label>
+            <textarea id="se-sub-zh-${i}" rows="2" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px;resize:vertical">${s.sub_zh||''}</textarea>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">Subtitle (繁體)</label>
+            <textarea id="se-sub-zht-${i}" rows="2" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px;resize:vertical">${s.sub_zht||''}</textarea>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">${lang==='en'?'Button (EN)':'按钮（英文）'}</label>
+            <input type="text" id="se-btn-en-${i}" value="${s.btn_en||'Shop Now'}" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">Button (中文)</label>
+            <input type="text" id="se-btn-zh-${i}" value="${s.btn_zh||'立即选购'}" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">Button (繁體)</label>
+            <input type="text" id="se-btn-zht-${i}" value="${s.btn_zht||'立即選購'}" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px">
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">${lang==='en'?'Theme':'主题'}</label>
+          <select id="se-theme-${i}" style="width:100%;border:.5px solid #dddbd3;border-radius:8px;padding:7px 10px;font-size:13px">
+            <option value="dark" ${(s.theme||'dark')==='dark'?'selected':''}>${lang==='en'?'Dark (forest green)':'深色（森林绿）'}</option>
+            <option value="light" ${s.theme==='light'?'selected':''}>${lang==='en'?'Light (bright green)':'浅色（亮绿）'}</option>
+            <option value="warm" ${s.theme==='warm'?'selected':''}>${lang==='en'?'Warm (amber/brown)':'暖色（琥珀棕）'}</option>
+          </select>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:12px;color:#6b6a63;margin-bottom:4px;font-weight:500">${lang==='en'?'Background Image':lang==='zht'?'背景圖片':'背景图片'}</label>
+          <label style="display:block;border:.5px dashed #dddbd3;border-radius:8px;padding:10px;text-align:center;cursor:pointer;background:#f5f4f0">
+            ${bg?`<img src="${bg}" style="height:60px;object-fit:cover;border-radius:6px;display:block;margin:0 auto 6px"><div style="font-size:11px;color:#6b6a63">${lang==='en'?'Click to replace':'点击更换'}</div>`:`<div style="font-size:12px;color:#6b6a63">${lang==='en'?'Click to upload (JPG/PNG/WebP)':'点击上传背景图片'}</div>`}
+            <input type="file" accept="image/*" style="display:none" onchange="handleSlideImg(event,${i})">
+          </label>
+          ${bg?`<button class="btn sm d" style="margin-top:6px;width:100%;justify-content:center" onclick="removeSlideImg(${i})">${lang==='en'?'Remove image':'移除图片'}</button>`:''}
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn p" style="flex:1;justify-content:center;padding:9px" onclick="saveSlideEdit(${i})">${lang==='en'?'Save Changes':lang==='zht'?'儲存變更':'保存更改'}</button>
+          <button class="btn" style="justify-content:center;padding:9px" onclick="toggleSlideEdit(${i})">${lang==='en'?'Cancel':lang==='zht'?'取消':'取消'}</button>
+        </div>
+      </div>
+    </div>` : '';
+
+    // ── Ad-style split banner layout ─────────────────────────────────────────
+    if(bg){
+      // Photo banner: full-bleed image with dark overlay + text overlay
+      return `<div class="hero-slide" style="flex:0 0 100%;min-width:0;position:relative;min-height:260px;display:flex;align-items:stretch;overflow:hidden;background:#1a2810;">
+        <img style="position:absolute;inset:0;object-fit:cover;width:100%;height:100%" src="${bg}" alt="">
+        <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.35) 60%,transparent 100%)"></div>
+        ${adminEditBtn}
+        <div style="position:relative;z-index:2;padding:2rem 2.5rem;max-width:480px;display:flex;flex-direction:column;justify-content:center;min-height:260px;">
+          ${badge?`<div style="display:inline-flex;align-items:center;background:${ac.tag};border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${ac.tagText};padding:3px 10px;margin-bottom:10px;width:fit-content">${badge}</div>`:''}
+          <h1 style="font-family:var(--font-display);font-size:clamp(24px,3.2vw,38px);font-weight:500;margin-bottom:8px;letter-spacing:-.5px;color:#fff;line-height:1.15">${title}</h1>
+          <p style="font-size:13px;color:rgba(255,255,255,.8);margin-bottom:1.25rem;line-height:1.6;font-weight:300;max-width:340px">${sub}</p>
+          <button onclick="${s.btnAction==='reg'?`go('reg')`:`go('shop')`}" style="display:inline-flex;align-items:center;gap:6px;background:${ac.btnBg};border:1.5px solid ${ac.btnBorder};border-radius:6px;color:${ac.btnText};font-size:13px;font-weight:600;padding:10px 22px;cursor:pointer;transition:all .18s;letter-spacing:.02em;width:fit-content" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">${btn}<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button>
+        </div>
+      </div>`;
+    }
+
+    // Gradient ad banner: left = promo copy, right = artwork panel
+    return `<div class="hero-slide" style="flex:0 0 100%;min-width:0;position:relative;min-height:260px;display:flex;align-items:stretch;overflow:hidden;background:${gradientBg};">
+      ${adminEditBtn}
+      <!-- left: promo text area -->
+      <div style="position:relative;z-index:2;flex:1;padding:2rem 2rem 2rem 2.5rem;display:flex;flex-direction:column;justify-content:center;min-height:260px;max-width:58%;">
+        ${badge?`<div style="display:inline-flex;align-items:center;gap:5px;background:${ac.tag};border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${ac.tagText};padding:3px 10px;margin-bottom:11px;width:fit-content">${badge}</div>`:''}
+        <h1 style="font-family:var(--font-display);font-size:clamp(22px,3vw,36px);font-weight:500;margin-bottom:9px;letter-spacing:-.4px;color:#fff;line-height:1.15">${title}</h1>
+        <p style="font-size:13px;color:rgba(255,255,255,.82);margin-bottom:1.25rem;line-height:1.6;font-weight:300;max-width:320px">${sub}</p>
+        <button onclick="${s.btnAction==='reg'?`go('reg')`:`go('shop')`}" style="display:inline-flex;align-items:center;gap:6px;background:${ac.btnBg};border:1.5px solid ${ac.btnBorder};border-radius:6px;color:${ac.btnText};font-size:13px;font-weight:600;padding:10px 22px;cursor:pointer;transition:all .18s;letter-spacing:.02em;width:fit-content" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">${btn}<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button>
+      </div>
+      <!-- right: artwork -->
+      <div style="position:relative;z-index:2;flex:0 0 280px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+        ${_slideArtwork[i] || _slideArtwork[0]}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ── Per-session state (never synced to Supabase) ──────────────────────────
 // db.cur and cart are persisted to localStorage so they survive page reloads.
 // db.adm stays in-memory only for security.
@@ -1433,7 +1876,7 @@ function restoreSession(){
 }
 
 const SYNC_KEYS = ['products','referrers','users','adminEmail','adminPassword',
-  'adminCreated','heroTextTitle','heroTextSub','feeRate'];
+  'adminCreated','heroTextTitle','heroTextSub','feeRate','carouselSlides'];
 // Image-only keys stored in a separate Supabase row to keep the main
 // doc small and fast. heroImage + per-product imgs arrays live here.
 const IMG_DOC_KEY = 'netiva_images';
@@ -2204,7 +2647,7 @@ function _updateNavTheme(v){
     nav.style.boxShadow='none';
   }
 }
-function go(v){vw=v;closeCart();editingRefId=null;editingProdId=null;if(v==='shop'){selectedVariants={};searchQuery='';selectedCat='';document.onkeydown=null;}
+function go(v){vw=v;closeCart();editingRefId=null;editingProdId=null;if(v!=='shop'&&typeof heroPause==='function')heroPause();if(v==='shop'){selectedVariants={};searchQuery='';selectedCat='';document.onkeydown=null;}
   // Hide/show pdp vs root
   const pdpEl=document.getElementById('pdp');const rootEl=document.getElementById('root');
   if(v.startsWith('pdp:')){
@@ -2278,10 +2721,23 @@ function rShop(r){
       </button>
     </div>
   </div>
-  <!-- Hero panel: white card inside grey content area -->
+  <!-- Hero Carousel -->
   <div style="padding:4px 28px 0;margin-left:240px" class="hero-panel-wrap" id="hero-panel-wrap">
-    <div style="border-radius:10px;overflow:hidden;position:relative">
-      <div class="${heroClass}" style="position:relative">${heroBg}${adminHeroBar}<div class="hero-content"><h1>${heroTitle}</h1><p>${heroSub}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn p" style="font-size:13px;padding:7px 18px" onclick="document.getElementById('mp').scrollIntoView({behavior:'smooth'})">${t('shopNow')}</button>${!db.cur?`<button class="btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4);color:#fff;font-size:13px;padding:7px 18px" onclick="go('reg')">${t('registerWithCode')}</button>`:''}</div></div></div>
+    <div id="hero-carousel" style="border-radius:10px;overflow:hidden;position:relative;user-select:none;" onmouseenter="heroPause()" onmouseleave="heroResume()">
+      <div id="hero-track" style="display:flex;transition:transform .45s cubic-bezier(.4,0,.2,1);will-change:transform;">
+        ${buildCarouselSlidesHtml(heroImg,heroTitle,heroSub,adminHeroBar)}
+      </div>
+      <!-- Dot indicators -->
+      <div id="hero-dots" style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:10;">
+        ${getCarouselSlides().map((_,i)=>`<button onclick="heroGoTo(${i})" class="hero-dot${i===0?' hero-dot-on':''}" style="width:${i===0?'20':'5'}px;height:5px;border-radius:3px;border:none;background:${i===0?'#fff':'rgba(255,255,255,.5)'};opacity:${i===0?'1':'0.5'};cursor:pointer;padding:0;transition:all .2s;"></button>`).join('')}
+      </div>
+      <!-- Prev/Next arrows -->
+      <button onclick="heroStep(-1)" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.3);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;transition:background .15s;" onmouseover="this.style.background='rgba(0,0,0,.55)'" onmouseout="this.style.background='rgba(0,0,0,.3)'">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 2L4 7l5 5"/></svg>
+      </button>
+      <button onclick="heroStep(1)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.3);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;transition:background .15s;" onmouseover="this.style.background='rgba(0,0,0,.55)'" onmouseout="this.style.background='rgba(0,0,0,.3)'">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l5 5-5 5"/></svg>
+      </button>
     </div>
   </div>
   <div class="cat-bar" id="cat-bar" style="margin-left:240px;padding-top:12px;padding-left:28px">
@@ -2290,6 +2746,102 @@ function rShop(r){
   </div>
   <div class="prods" id="mp" style="margin-left:240px"></div>`;
   rShopProducts();
+  // Init carousel after DOM is ready
+  setTimeout(heroCarouselInit, 0);
+}
+
+// ── Hero Carousel ──────────────────────────────────────────────────────────
+let _heroIdx=0, _heroTotal=4, _heroTimer=null, _heroPaused=false;
+let _heroTouchStartX=0, _heroTouchMoved=false;
+
+function heroCarouselInit(){
+  const track=document.getElementById('hero-track');
+  const carousel=document.getElementById('hero-carousel');
+  if(!track||!carousel) return;
+  _heroIdx=0;
+  _heroTotal=carousel.querySelectorAll('.hero-slide').length;
+  heroUpdateTrack();
+  heroResume();
+  // Touch / swipe support
+  carousel.addEventListener('touchstart',e=>{_heroTouchStartX=e.touches[0].clientX;_heroTouchMoved=false;},{passive:true});
+  carousel.addEventListener('touchmove',e=>{if(Math.abs(e.touches[0].clientX-_heroTouchStartX)>8)_heroTouchMoved=true;},{passive:true});
+  carousel.addEventListener('touchend',e=>{
+    if(!_heroTouchMoved)return;
+    const dx=e.changedTouches[0].clientX-_heroTouchStartX;
+    if(dx<-40)heroStep(1);else if(dx>40)heroStep(-1);
+  },{passive:true});
+}
+function heroGoTo(i){_heroIdx=i;heroUpdateTrack();heroPause();setTimeout(heroResume,4000);}
+function heroStep(d){_heroIdx=(_heroIdx+d+_heroTotal)%_heroTotal;heroUpdateTrack();}
+function heroUpdateTrack(){
+  const track=document.getElementById('hero-track');
+  if(track) track.style.transform=`translateX(-${_heroIdx*100}%)`;
+  document.querySelectorAll('.hero-dot').forEach((d,i)=>{
+    const on=i===_heroIdx;
+    d.style.width=on?'20px':'5px';
+    d.style.opacity=on?'1':'0.5';
+    d.style.background=on?'#fff':'rgba(255,255,255,.5)';
+  });
+}
+function heroPause(){_heroPaused=true;if(_heroTimer){clearInterval(_heroTimer);_heroTimer=null;}}
+function heroResume(){
+  _heroPaused=false;
+  if(_heroTimer)clearInterval(_heroTimer);
+  _heroTimer=setInterval(()=>{if(!_heroPaused){_heroIdx=(_heroIdx+1)%_heroTotal;heroUpdateTrack();}},4500);
+}
+function toggleSlideEdit(idx){
+  const panel=document.getElementById('slide-edit-panel-'+idx);
+  if(!panel)return;
+  const isOpen=panel.style.display==='flex';
+  panel.style.display=isOpen?'none':'flex';
+}
+function saveSlideEdit(idx){
+  const slides=getCarouselSlides().map(s=>({...s})); // copy
+  const s=slides[idx];
+  s.badge_en=document.getElementById('se-badge-en-'+idx)?.value.trim()||'';
+  s.badge_zh=document.getElementById('se-badge-zh-'+idx)?.value.trim()||'';
+  s.badge_zht=document.getElementById('se-badge-zht-'+idx)?.value.trim()||'';
+  s.title_en=document.getElementById('se-title-en-'+idx)?.value.trim()||s.title_en;
+  s.title_zh=document.getElementById('se-title-zh-'+idx)?.value.trim()||s.title_zh;
+  s.title_zht=document.getElementById('se-title-zht-'+idx)?.value.trim()||s.title_zht;
+  s.sub_en=document.getElementById('se-sub-en-'+idx)?.value.trim()||'';
+  s.sub_zh=document.getElementById('se-sub-zh-'+idx)?.value.trim()||'';
+  s.sub_zht=document.getElementById('se-sub-zht-'+idx)?.value.trim()||'';
+  s.btn_en=document.getElementById('se-btn-en-'+idx)?.value.trim()||'Shop Now';
+  s.btn_zh=document.getElementById('se-btn-zh-'+idx)?.value.trim()||'立即选购';
+  s.btn_zht=document.getElementById('se-btn-zht-'+idx)?.value.trim()||'立即選購';
+  s.theme=document.getElementById('se-theme-'+idx)?.value||'dark';
+  db.carouselSlides=slides;
+  sv(true);
+  // Re-render shop to refresh carousel
+  rShop(document.getElementById('root'));
+  setTimeout(()=>{heroCarouselInit();_heroIdx=idx;heroUpdateTrack();},50);
+}
+function handleSlideImg(e,idx){
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=async ev=>{
+    let src=ev.target.result;
+    if(_fb.uploadImage){
+      const url=await _fb.uploadImage('hero/slide'+idx, src);
+      if(url)src=url;
+    }
+    const slides=getCarouselSlides().map(s=>({...s}));
+    slides[idx].bg=src;
+    db.carouselSlides=slides;
+    sv(true);
+    rShop(document.getElementById('root'));
+    setTimeout(()=>{heroCarouselInit();_heroIdx=idx;heroUpdateTrack();toggleSlideEdit(idx);},50);
+  };
+  rd.readAsDataURL(f);
+}
+function removeSlideImg(idx){
+  const slides=getCarouselSlides().map(s=>({...s}));
+  slides[idx].bg='';
+  db.carouselSlides=slides;
+  sv(true);
+  rShop(document.getElementById('root'));
+  setTimeout(()=>{heroCarouselInit();_heroIdx=idx;heroUpdateTrack();toggleSlideEdit(idx);},50);
 }
 function toggleHeroEdit(){
   const panel=document.getElementById('hero-edit-panel');
@@ -2577,7 +3129,7 @@ function doAdm(){const em=document.getElementById('a-email').value.trim().toLowe
 let atab='products';
 function rAdm(r){
   if(!db.adm){rAdmLogin(r);return;}
-  r.innerHTML=`<div class="pgw"><div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1rem;border-bottom:.5px solid var(--color-border-tertiary);margin-bottom:1.5rem"><div><div style="font-size:18px;font-weight:500">${t('adminPanel')}</div></div><div style="display:flex;gap:8px"><button class="btn sm" onclick="go('shop')">${lang==='en'?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-5a1 1 0 00-1-1h-4a1 1 0 00-1 1v5H4a1 1 0 01-1-1V10.5z"/></svg>View Shop':lang==='zht'?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-5a1 1 0 00-1-1h-4a1 1 0 00-1 1v5H4a1 1 0 01-1-1V10.5z"/></svg>查看商店':'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-5a1 1 0 00-1-1h-4a1 1 0 00-1 1v5H4a1 1 0 01-1-1V10.5z"/></svg>查看商店'}</button><button class="btn sm d" onclick="db.adm=false;sv();go('shop')">${t('logout')}</button></div></div>
+  r.innerHTML=`<div class="pgw" style="margin-left:240px"><div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1rem;border-bottom:.5px solid var(--color-border-tertiary);margin-bottom:1.5rem"><div><div style="font-size:18px;font-weight:500">${t('adminPanel')}</div></div><div style="display:flex;gap:8px"><button class="btn sm" onclick="go('shop')">${lang==='en'?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-5a1 1 0 00-1-1h-4a1 1 0 00-1 1v5H4a1 1 0 01-1-1V10.5z"/></svg>View Shop':lang==='zht'?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-5a1 1 0 00-1-1h-4a1 1 0 00-1 1v5H4a1 1 0 01-1-1V10.5z"/></svg>查看商店':'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-5a1 1 0 00-1-1h-4a1 1 0 00-1 1v5H4a1 1 0 01-1-1V10.5z"/></svg>查看商店'}</button><button class="btn sm d" onclick="db.adm=false;sv();go('shop')">${t('logout')}</button></div></div>
     <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.5rem"><div class="sc"><div class="sl">${t('activeProducts')}</div><div class="sv">${db.products.filter(p=>p.active).length}<span style="font-size:13px;color:var(--color-text-secondary)">/${db.products.length}</span></div></div><div class="sc"><div class="sl">${t('activeReferrers')}</div><div class="sv">${db.referrers.filter(r=>r.active).length}<span style="font-size:13px;color:var(--color-text-secondary)">/${db.referrers.length}</span></div></div><div class="sc"><div class="sl">${t('registeredMembers')}</div><div class="sv">${db.users.length}</div></div><div class="sc" style="cursor:pointer" onclick="toggleFeeEdit()" title="Click to edit"><div style="display:flex;align-items:center;justify-content:space-between"><div class="sl">${t('feeRateLabel')}</div><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="#a3a199" stroke-width="1.4" stroke-linecap="round"><path d="M10 2l2 2-7 7H3v-2L10 2z"/></svg></div><div id="fee-display" style="font-size:18px;font-weight:500;margin-top:4px;color:#854F0B">${(FEE_RATE*100).toFixed(2).replace(/\.?0+$/,'')}%</div><div id="fee-edit" style="display:none;margin-top:6px"><div style="display:flex;gap:6px;align-items:center"><input type="number" id="fee-input" value="${(FEE_RATE*100).toFixed(4)}" min="0" max="100" step="0.01" style="width:70px;padding:4px 7px;font-size:13px" onclick="event.stopPropagation()"><span style="font-size:13px;color:var(--color-text-secondary)">%</span><button class="btn p sm" onclick="event.stopPropagation();saveFeeRate()">${lang==='en'?'Save':(lang==='zht'?'儲存':'保存')}</button></div><div id="fee-msg" style="margin-top:4px"></div></div></div></div>
     <div class="tabs"><div class="tab ${atab==='products'?'on':''}" onclick="atab='products';rAdm(document.getElementById('root'))">${t('productsTab')}</div><div class="tab ${atab==='referrers'?'on':''}" onclick="atab='referrers';rAdm(document.getElementById('root'))">${t('referrersTab')}</div><div class="tab ${atab==='addref'?'on':''}" onclick="atab='addref';rAdm(document.getElementById('root'))">${t('addReferrer')}</div><div class="tab ${atab==='members'?'on':''}" onclick="atab='members';rAdm(document.getElementById('root'))">${t('membersTab')}</div><div class="tab ${atab==='settings'?'on':''}" onclick="atab='settings';rAdm(document.getElementById('root'))">${t('settingsTab')}</div></div>
     <div id="atc"></div></div>`;
@@ -2887,7 +3439,7 @@ function togRef(id){const r=db.referrers.find(x=>x.id===id);if(!r)return;r.activ
 function delRef(id){const cnt=membersByRef(id).length;if(cnt>0){const tc=document.getElementById('atc');const d=document.createElement('div');d.className='m e';d.style.marginBottom='10px';d.textContent=t('errorDeleteReferrer');tc.prepend(d);setTimeout(()=>d.remove(),3000);return;}db.referrers=db.referrers.filter(x=>x.id!==id);sv(true);editingRefId=null;rAdmRefs(document.getElementById('atc'));}
 function rAdmMem(tc){tc.innerHTML=`<div style="overflow-x:auto"><table><thead><tr><th>${t('memberName')}</th><th>${t('email')}</th><th>${t('referrer')}</th><th>${t('referralCode')}</th><th>${t('regDate')}</th><th>${t('orders')}</th></tr></thead><tbody>${db.users.length===0?`<tr><td colspan="6" style="text-align:center;color:var(--color-text-secondary);padding:2rem">${t('noMembers')}</td></tr>`:db.users.map(u=>`<tr><td><div style="display:flex;align-items:center;gap:8px"><div class="ava" style="width:24px;height:24px;font-size:10px">${ava(u)}</div><span style="font-weight:500">${u.name}</span></div></td><td style="color:var(--color-text-secondary)">${u.email}</td><td><span class="bdg a">${u.referrerName}</span></td><td><span class="code">${refById(u.referrerId)?.code||'—'}</span></td><td style="color:var(--color-text-secondary)">${u.joined}</td><td>${u.orders||0}</td></tr>`).join('')}</tbody></table></div>`;}
 
-function rAdmSettings(tc){const heroImg=db.heroImage||'';const heroTitle=db.heroTextTitle||'';const heroSub=db.heroTextSub||'';tc.innerHTML=`<div style="max-width:480px">
+function rAdmSettings(tc){const heroImg=db.heroImage||'';const heroTitle=db.heroTextTitle||'';const heroSub=db.heroTextSub||'';const slides=getCarouselSlides();tc.innerHTML=`<div style="max-width:480px">
 <div style="background:var(--color-background-primary);border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.5rem;margin-bottom:1rem">
   <div style="font-size:15px;font-weight:500;margin-bottom:4px">${lang==='en'?'Hero Banner':lang==='zht'?'首頁橫幅':'首页横幅'}</div>
   <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:14px">${lang==='en'?'Edit the homepage hero title, subtitle, and background image.':lang==='zht'?'編輯首頁橫幅標題、副標題和背景圖片。':'编辑首页横幅标题、副标题和背景图片。'}</div>
@@ -2912,8 +3464,130 @@ function rAdmSettings(tc){const heroImg=db.heroImage||'';const heroTitle=db.hero
   ${heroImg?`<button class="btn sm d" style="width:100%;justify-content:center" onclick="removeHeroImg()">${lang==='en'?'Remove banner image':(lang==='zht'?'移除圖片':'移除图片')}</button>`:''}
   <div id="hero-img-msg" style="margin-top:8px"></div>
 </div>
+<div style="background:var(--color-background-primary);border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.5rem;margin-bottom:1rem">
+  <div style="font-size:15px;font-weight:500;margin-bottom:4px">${lang==='en'?'Carousel Slides':lang==='zht'?'輪播幻燈片':'轮播幻灯片'}</div>
+  <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:14px">${lang==='en'?'Edit each of the 4 hero carousel slides. You can also click "Edit Slide" directly on the homepage carousel when logged in as admin.':lang==='zht'?'編輯4張輪播幻燈片。也可在首頁輪播上直接點擊「編輯幻燈片」。':'编辑4张轮播幻灯片。也可在首页轮播上直接点击"编辑幻灯片"。'}</div>
+  ${slides.map((s,i)=>{
+    const title = lang==='zh'? s.title_zh : lang==='zht'? s.title_zht : s.title_en;
+    const sub = lang==='zh'? s.sub_zh : lang==='zht'? s.sub_zht : s.sub_en;
+    const badge = lang==='zh'? (s.badge_zh||s.badge||'') : lang==='zht'? (s.badge_zht||s.badge||'') : (s.badge_en||s.badge||'');
+    const bg = i===0 ? (s.bg||db.heroImage||'') : (s.bg||'');
+    return `<div style="border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);margin-bottom:8px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--color-background-secondary)">
+        ${bg?`<img src="${bg}" style="width:52px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0">`:`<div style="width:52px;height:36px;border-radius:5px;background:linear-gradient(135deg,#314021,#4a7c2f);flex-shrink:0"></div>`}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${badge?`<span style="font-size:10px;background:#e2edd8;color:#314021;border-radius:3px;padding:1px 5px;margin-right:5px">${badge}</span>`:''}${title||'(no title)'}</div>
+          <div style="font-size:11px;color:var(--color-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${sub||''}</div>
+        </div>
+        <button class="btn sm" onclick="openAdmSlideEdit(${i})" style="flex-shrink:0">${lang==='en'?'Edit':lang==='zht'?'編輯':'编辑'}</button>
+      </div>
+      <div id="adm-slide-edit-${i}" style="display:none;padding:12px;border-top:.5px solid var(--color-border-tertiary)">
+        <div style="margin-bottom:8px">
+          <label style="display:block;font-size:12px;color:var(--color-text-secondary);margin-bottom:3px;font-weight:500">${lang==='en'?'Badge / Label (EN)':'标签（英文）'}</label>
+          <input type="text" id="adm-se-badge-en-${i}" value="${s.badge_en||s.badge||''}" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div><label style="display:block;font-size:11px;color:var(--color-text-tertiary);margin-bottom:2px">Badge 中文</label><input type="text" id="adm-se-badge-zh-${i}" value="${s.badge_zh||''}" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px"></div>
+          <div><label style="display:block;font-size:11px;color:var(--color-text-tertiary);margin-bottom:2px">Badge 繁體</label><input type="text" id="adm-se-badge-zht-${i}" value="${s.badge_zht||''}" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px"></div>
+        </div>
+        <div style="margin-bottom:8px">
+          <label style="display:block;font-size:12px;color:var(--color-text-secondary);margin-bottom:3px;font-weight:500">Title EN</label>
+          <input type="text" id="adm-se-title-en-${i}" value="${s.title_en||''}" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div><label style="display:block;font-size:11px;color:var(--color-text-tertiary);margin-bottom:2px">Title 中文</label><input type="text" id="adm-se-title-zh-${i}" value="${s.title_zh||''}" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px"></div>
+          <div><label style="display:block;font-size:11px;color:var(--color-text-tertiary);margin-bottom:2px">Title 繁體</label><input type="text" id="adm-se-title-zht-${i}" value="${s.title_zht||''}" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px"></div>
+        </div>
+        <div style="margin-bottom:8px">
+          <label style="display:block;font-size:12px;color:var(--color-text-secondary);margin-bottom:3px;font-weight:500">Subtitle EN</label>
+          <textarea id="adm-se-sub-en-${i}" rows="2" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px;resize:vertical">${s.sub_en||''}</textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div><label style="display:block;font-size:11px;color:var(--color-text-tertiary);margin-bottom:2px">Subtitle 中文</label><textarea id="adm-se-sub-zh-${i}" rows="2" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px;resize:vertical">${s.sub_zh||''}</textarea></div>
+          <div><label style="display:block;font-size:11px;color:var(--color-text-tertiary);margin-bottom:2px">Subtitle 繁體</label><textarea id="adm-se-sub-zht-${i}" rows="2" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px;resize:vertical">${s.sub_zht||''}</textarea></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+          <div><label style="display:block;font-size:11px;color:var(--color-text-tertiary);margin-bottom:2px">Button EN</label><input type="text" id="adm-se-btn-en-${i}" value="${s.btn_en||'Shop Now'}" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px"></div>
+          <div><label style="display:block;font-size:11px;color:var(--color-text-tertiary);margin-bottom:2px">Button 中文</label><input type="text" id="adm-se-btn-zh-${i}" value="${s.btn_zh||'立即选购'}" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px"></div>
+          <div><label style="display:block;font-size:11px;color:var(--color-text-tertiary);margin-bottom:2px">Button 繁體</label><input type="text" id="adm-se-btn-zht-${i}" value="${s.btn_zht||'立即選購'}" style="width:100%;font-size:13px;padding:6px 9px;border:.5px solid var(--color-border-secondary);border-radius:7px"></div>
+        </div>
+        <div style="margin-bottom:8px">
+          <label style="display:block;font-size:12px;color:var(--color-text-secondary);margin-bottom:3px;font-weight:500">${lang==='en'?'Theme':'主题'}</label>
+          <select id="adm-se-theme-${i}" style="width:100%;border:.5px solid var(--color-border-secondary);border-radius:7px;padding:6px 9px;font-size:13px">
+            <option value="dark" ${(s.theme||'dark')==='dark'?'selected':''}>${lang==='en'?'Dark (forest green)':'深色（森林绿）'}</option>
+            <option value="light" ${s.theme==='light'?'selected':''}>${lang==='en'?'Light (bright green)':'浅色（亮绿）'}</option>
+            <option value="warm" ${s.theme==='warm'?'selected':''}>${lang==='en'?'Warm (amber/brown)':'暖色（琥珀棕）'}</option>
+          </select>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="display:block;font-size:12px;color:var(--color-text-secondary);margin-bottom:3px;font-weight:500">${lang==='en'?'Background Image':'背景图片'}</label>
+          ${bg?`<div style="margin-bottom:6px;border-radius:6px;overflow:hidden"><img src="${bg}" style="width:100%;height:80px;object-fit:cover;display:block"></div>`:''}
+          <label style="display:block;border:.5px dashed var(--color-border-secondary);border-radius:7px;padding:8px;text-align:center;cursor:pointer;background:var(--color-background-secondary);font-size:12px;color:var(--color-text-secondary)">
+            ${bg?`${lang==='en'?'Click to replace image':'点击更换图片'}`:`${lang==='en'?'Upload background image':'上传背景图片'}`}
+            <input type="file" accept="image/*" style="display:none" onchange="handleSlideImgAdm(event,${i})">
+          </label>
+          ${bg?`<button class="btn sm d" style="margin-top:5px;width:100%;justify-content:center" onclick="removeSlideImgAdm(${i})">${lang==='en'?'Remove image':'移除图片'}</button>`:''}
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn p sm" style="flex:1;justify-content:center" onclick="saveAdmSlideEdit(${i})">${lang==='en'?'Save':lang==='zht'?'儲存':'保存'}</button>
+          <button class="btn sm" style="justify-content:center" onclick="openAdmSlideEdit(${i})">${lang==='en'?'Cancel':lang==='zht'?'取消':'取消'}</button>
+        </div>
+        <div id="adm-slide-msg-${i}" style="margin-top:6px"></div>
+      </div>
+    </div>`;
+  }).join('')}
+</div>
 <div style="background:var(--color-background-primary);border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.5rem;margin-bottom:1rem"><div style="font-size:15px;font-weight:500;margin-bottom:1rem">${t('adminCredentials')}</div><div id="stg-msg"></div><div class="fl"><label>${t('newEmail')}</label><input type="email" id="stg-email" value="${db.adminEmail||''}" placeholder="${t('adminEmailPlaceholder')}"></div><div class="dv"></div><div class="fl"><label>${t('currentPassword')}</label><input type="password" id="stg-cur-pw" placeholder="••••••••"></div><div class="fl"><label>${t('newPassword')} <span style="font-size:11px;color:var(--color-text-tertiary)">(${lang==='en'?'leave blank to keep current':lang==='zht'?'留空保持不變':'留空保持不变'})</span></label><input type="password" id="stg-new-pw" placeholder="••••••••" oninput="ckAS2(this.value)"><div class="sb" id="stg-sb" style="width:0%;background:#E24B4A"></div></div><div class="fl"><label>${t('confirmPassword')}</label><input type="password" id="stg-new-pw2" placeholder="••••••••"></div><button class="btn p" style="margin-top:8px" onclick="saveAdminSettings()">${t('saveCredentials')}</button></div></div>`;}
-function handleHeroImg(e){
+function openAdmSlideEdit(idx){
+  document.querySelectorAll('[id^="adm-slide-edit-"]').forEach((el,i)=>{
+    if(i!==idx)el.style.display='none';
+  });
+  const panel=document.getElementById('adm-slide-edit-'+idx);
+  if(panel)panel.style.display=panel.style.display==='block'?'none':'block';
+}
+function saveAdmSlideEdit(idx){
+  const slides=getCarouselSlides().map(s=>({...s}));
+  const s=slides[idx];
+  s.badge_en=document.getElementById('adm-se-badge-en-'+idx)?.value.trim()||'';
+  s.badge_zh=document.getElementById('adm-se-badge-zh-'+idx)?.value.trim()||'';
+  s.badge_zht=document.getElementById('adm-se-badge-zht-'+idx)?.value.trim()||'';
+  s.title_en=document.getElementById('adm-se-title-en-'+idx)?.value.trim()||s.title_en;
+  s.title_zh=document.getElementById('adm-se-title-zh-'+idx)?.value.trim()||s.title_zh;
+  s.title_zht=document.getElementById('adm-se-title-zht-'+idx)?.value.trim()||s.title_zht;
+  s.sub_en=document.getElementById('adm-se-sub-en-'+idx)?.value.trim()||'';
+  s.sub_zh=document.getElementById('adm-se-sub-zh-'+idx)?.value.trim()||'';
+  s.sub_zht=document.getElementById('adm-se-sub-zht-'+idx)?.value.trim()||'';
+  s.btn_en=document.getElementById('adm-se-btn-en-'+idx)?.value.trim()||'Shop Now';
+  s.btn_zh=document.getElementById('adm-se-btn-zh-'+idx)?.value.trim()||'立即选购';
+  s.btn_zht=document.getElementById('adm-se-btn-zht-'+idx)?.value.trim()||'立即選購';
+  s.theme=document.getElementById('adm-se-theme-'+idx)?.value||'dark';
+  db.carouselSlides=slides;
+  sv(true);
+  const msg=document.getElementById('adm-slide-msg-'+idx);
+  if(msg)msg.innerHTML='<div class="m s" style="font-size:12px">'+(lang==='en'?'Saved!':lang==='zht'?'已儲存！':'已保存！')+'</div>';
+  setTimeout(()=>{rAdmSettings(document.getElementById('atc'));},900);
+}
+function handleSlideImgAdm(e,idx){
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=async ev=>{
+    let src=ev.target.result;
+    if(_fb.uploadImage){const url=await _fb.uploadImage('hero/slide'+idx,src);if(url)src=url;}
+    const slides=getCarouselSlides().map(s=>({...s}));
+    slides[idx].bg=src;
+    db.carouselSlides=slides;
+    sv(true);
+    rAdmSettings(document.getElementById('atc'));
+  };
+  rd.readAsDataURL(f);
+}
+function removeSlideImgAdm(idx){
+  const slides=getCarouselSlides().map(s=>({...s}));
+  slides[idx].bg='';
+  db.carouselSlides=slides;
+  sv(true);
+  rAdmSettings(document.getElementById('atc'));
+}function handleHeroImg(e){
   const f=e.target.files[0];if(!f)return;
   const msg=document.getElementById('hero-img-msg');
   if(msg)msg.innerHTML=`<div class="m" style="color:var(--color-text-secondary)">${lang==='en'?'Uploading…':lang==='zht'?'上傳中…':'上传中…'}</div>`;
