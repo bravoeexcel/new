@@ -2560,7 +2560,7 @@ function renderCartDrawer(){
 
         </div>
         ${cart.map(i=>{
-          const imgContent=i.img?`<img src="${i.img}" alt="">`:(i.imgs&&i.imgs[0]?`<img src="${i.imgs[0]}" alt="">`:i.icon||'📦');
+          const imgContent=i.img?`<img src="${i.img}" loading="lazy" decoding="async" alt="">`:(i.imgs&&i.imgs[0]?`<img src="${i.imgs[0]}" loading="lazy" decoding="async" alt="">`:i.icon||'📦');
           const unitPrice=(i.usdPrice*(rate||7.25)).toFixed(2);
           const totalItemPrice=(i.usdPrice*i.qty*(rate||7.25)).toFixed(2);
           return `<div class="cart-item-row">
@@ -2961,7 +2961,7 @@ function rShopProducts(){
     if(hasImgs){
       const dots=imgs.length>1?`<div class="pi-dots" id="pidots-${p.id}">${imgs.map((_,i)=>`<button class="pi-dot${i===0?' on':''}" onclick="event.stopPropagation();cardSlide('${p.id}',${i})"></button>`).join('')}</div>`:'';
       const navBtns=imgs.length>1?`<button class="pi-nav left" onclick="event.stopPropagation();cardSlide('${p.id}',-1,true)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7.5 2L4 6l3.5 4"/></svg></button><button class="pi-nav right" onclick="event.stopPropagation();cardSlide('${p.id}',1,true)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4.5 2L8 6l-3.5 4"/></svg></button>`:'';
-      mediaHtml=`<div class="pi" id="pi-${p.id}"><img src="${imgs[0]}" id="pi-img-${p.id}" style="width:100%;height:100%;object-fit:cover">${navBtns}${dots}<button class="pi-expand" onclick="event.stopPropagation();viewProduct('${p.id}')"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1h4M1 1v4M13 1h-4M13 1v4M1 13h4M1 13v-4M13 13h-4M13 13v-4"/></svg></button></div>`;
+      mediaHtml=`<div class="pi" id="pi-${p.id}"><img src="${imgs[0]}" id="pi-img-${p.id}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">${navBtns}${dots}<button class="pi-expand" onclick="event.stopPropagation();viewProduct('${p.id}')"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1h4M1 1v4M13 1h-4M13 1v4M1 13h4M1 13v-4M13 13h-4M13 13v-4"/></svg></button></div>`;
     } else {
       mediaHtml=`<div class="pi" id="pi-${p.id}">${p.icon||'📦'}<button class="pi-expand" onclick="event.stopPropagation();viewProduct('${p.id}')"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1h4M1 1v4M13 1h-4M13 1v4M1 13h4M1 13v-4M13 13h-4M13 13v-4"/></svg></button></div>`;
     }
@@ -3025,9 +3025,9 @@ function rPDP(id){
       <button class="pdp-gallery-nav prev" onclick="pdpSlide('${id}',-1)"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 2L5 7l4 5"/></svg></button>
       <button class="pdp-gallery-nav next" onclick="pdpSlide('${id}',1)"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 2l4 5-4 5"/></svg></button>
       ${imgs.length>1?`<div class="pdp-img-counter" id="pdp-counter-${id}">${idx+1} / ${imgs.length}</div>`:''}`:'' ;
-    const thumbsHtml=imgs.length>1?`<div class="pdp-thumbs">${imgs.map((src,i)=>`<img src="${src}" class="pdp-thumb${i===idx?' on':''}" onclick="pdpSlide('${id}',${i},true)">`).join('')}</div>`:'';
+    const thumbsHtml=imgs.length>1?`<div class="pdp-thumbs">${imgs.map((src,i)=>`<img src="${src}" loading="lazy" decoding="async" class="pdp-thumb${i===idx?' on':''}" onclick="pdpSlide('${id}',${i},true)">`).join('')}</div>`:'';
     galleryHtml=`<div class="pdp-main-img-wrap" id="pdp-gallery-${id}">
-      <img class="pdp-main-img" id="pdp-main-img-${id}" src="${imgs[idx]}" alt="${name}">
+      <img class="pdp-main-img" id="pdp-main-img-${id}" loading="lazy" decoding="async" src="${imgs[idx]}" alt="${name}">
       ${nav}
     </div>${thumbsHtml}`;
   } else {
