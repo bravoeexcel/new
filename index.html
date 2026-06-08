@@ -578,21 +578,24 @@
       border-bottom: .5px solid var(--color-border-secondary);
       box-shadow: 0 8px 24px rgba(0,0,0,.08);
       z-index: 200;
-      padding: 6px 0;
+      padding: 8px 4px;
     }
-    .mob-dropdown.open { display: block; }
+    .mob-dropdown.open { display: flex; flex-direction: row; align-items: stretch; }
+    #mob-nav-auth { display: contents; }
     .mob-dd-item {
-      display: flex; align-items: center; gap: 10px;
-      width: 100%; text-align: left;
-      padding: 12px 20px;
-      font-size: 14px; cursor: pointer;
-      background: transparent; border: none;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 5px; flex: 1;
+      padding: 10px 4px;
+      font-size: 11px; font-weight: 500; cursor: pointer;
+      background: transparent; border: none; border-radius: 10px;
       color: var(--color-text-secondary);
-      border-bottom: .5px solid var(--color-border-tertiary);
+      letter-spacing: .01em; line-height: 1.2;
+      transition: background .15s, color .15s;
     }
-    .mob-dd-item:last-child { border-bottom: none; }
-    .mob-dd-item:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
-    .mob-dd-item svg { opacity: .55; flex-shrink: 0; }
+    .mob-dd-item:hover { background: var(--color-background-secondary); color: var(--color-accent); }
+    .mob-dd-item.active { color: var(--color-accent); }
+    .mob-dd-item svg { opacity: .7; flex-shrink: 0; }
+    .mob-dd-item:hover svg { opacity: 1; }
 
     .lang-pick-overlay {
       position: fixed; inset: 0; z-index: 9999;
@@ -1165,20 +1168,20 @@
   <!-- Mobile dropdown -->
   <div class="mob-dropdown" id="mob-dropdown">
     <button class="mob-dd-item" id="mob-nav-shop" onclick="go('shop');closeMobMenu()">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 1h2l2.4 7.6a1 1 0 001 .7h5.2a1 1 0 001-.8L14 5H4"/><circle cx="6.5" cy="13.5" r="1"/><circle cx="11.5" cy="13.5" r="1"/></svg>
-      <span>Shop</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-5a1 1 0 00-1-1h-4a1 1 0 00-1 1v5H4a1 1 0 01-1-1V10.5z"/></svg>
+      <span>Discover</span>
     </button>
     <button class="mob-dd-item" id="mob-nav-admin" onclick="go('admin-login');closeMobMenu()">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="4" r="2.5"/><path d="M3 15v-1.5A4.5 4.5 0 017.5 9h1A4.5 4.5 0 0113 13.5V15"/></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="3"/><path d="M5 21v-2a5 5 0 015-5h4a5 5 0 015 5v2"/><path d="M12 10l-1 3h2l-1 3" stroke-width="1.4"/></svg>
       <span>Admin</span>
     </button>
     <div id="mob-nav-auth">
       <button class="mob-dd-item" id="mob-nav-reg" onclick="go('reg');closeMobMenu()">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M12 2v4M10 4h4"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 3v6M16 6h6"/></svg>
         <span>Register</span>
       </button>
       <button class="mob-dd-item" id="mob-nav-login" onclick="go('login');closeMobMenu()">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M10 3h3a1 1 0 011 1v8a1 1 0 01-1 1h-3"/><path d="M6 11l3-3-3-3M9 8H2"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         <span>Sign In</span>
       </button>
     </div>
@@ -1880,7 +1883,7 @@ function buildCarouselSlidesHtml(heroImg, heroTitle, heroSub, adminHeroBar){
           ${badge?`<div style="display:inline-flex;align-items:center;background:${ac.tag};border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${ac.tagText};padding:3px 10px;margin-bottom:10px;width:fit-content">${badge}</div>`:''}
           <h1 style="font-family:var(--font-display);font-size:clamp(22px,3.2vw,38px);font-weight:500;margin-bottom:8px;letter-spacing:-.5px;color:#fff;line-height:1.15">${title}</h1>
           <p style="font-size:13px;color:rgba(255,255,255,.8);margin-bottom:1.25rem;line-height:1.6;font-weight:300;max-width:340px">${sub}</p>
-          <button onclick="${s.btnAction==='reg'?`go('reg')`:`go('shop')`}" style="display:inline-flex;align-items:center;gap:6px;background:${ac.btnBg};border:1.5px solid ${ac.btnBorder};border-radius:6px;color:${ac.btnText};font-size:13px;font-weight:600;padding:10px 22px;cursor:pointer;transition:all .18s;letter-spacing:.02em;width:fit-content" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">${btn}<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button>
+          <button onclick="${s.btnAction==='reg'?`go('reg')`:i===0||i===1?`document.getElementById('mp')&&document.getElementById('mp').scrollIntoView({behavior:'smooth',block:'start'})`:i===3?`onCat('elemente');setTimeout(()=>{document.getElementById('mp')&&document.getElementById('mp').scrollIntoView({behavior:'smooth',block:'start'})},50)`:`go('shop')`}" style="display:inline-flex;align-items:center;gap:6px;background:${ac.btnBg};border:1.5px solid ${ac.btnBorder};border-radius:6px;color:${ac.btnText};font-size:13px;font-weight:600;padding:10px 22px;cursor:pointer;transition:all .18s;letter-spacing:.02em;width:fit-content" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">${btn}<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button>
         </div>
       </div>`;
     }
@@ -1894,7 +1897,7 @@ function buildCarouselSlidesHtml(heroImg, heroTitle, heroSub, adminHeroBar){
           ${badge?`<div style="display:inline-flex;align-items:center;gap:5px;background:${ac.tag};border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${ac.tagText};padding:3px 10px;margin-bottom:11px;width:fit-content">${badge}</div>`:''}
           <h1 style="font-family:var(--font-display);font-size:clamp(20px,3vw,36px);font-weight:500;margin-bottom:9px;letter-spacing:-.4px;color:#fff;line-height:1.15">${title}</h1>
           <p style="font-size:13px;color:rgba(255,255,255,.82);margin-bottom:1.25rem;line-height:1.6;font-weight:300;max-width:320px">${sub}</p>
-          <button onclick="${s.btnAction==='reg'?`go('reg')`:`go('shop')`}" style="display:inline-flex;align-items:center;gap:6px;background:${ac.btnBg};border:1.5px solid ${ac.btnBorder};border-radius:6px;color:${ac.btnText};font-size:13px;font-weight:600;padding:10px 22px;cursor:pointer;transition:all .18s;letter-spacing:.02em;width:fit-content" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">${btn}<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button>
+          <button onclick="${s.btnAction==='reg'?`go('reg')`:i===0||i===1?`document.getElementById('mp')&&document.getElementById('mp').scrollIntoView({behavior:'smooth',block:'start'})`:i===3?`onCat('elemente');setTimeout(()=>{document.getElementById('mp')&&document.getElementById('mp').scrollIntoView({behavior:'smooth',block:'start'})},50)`:`go('shop')`}" style="display:inline-flex;align-items:center;gap:6px;background:${ac.btnBg};border:1.5px solid ${ac.btnBorder};border-radius:6px;color:${ac.btnText};font-size:13px;font-weight:600;padding:10px 22px;cursor:pointer;transition:all .18s;letter-spacing:.02em;width:fit-content" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">${btn}<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h7M6.5 3l3 3-3 3"/></svg></button>
         </div>
         <!-- right: artwork -->
         <div class="hero-slide-artwork" style="position:relative;z-index:2;flex:0 0 280px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
@@ -2679,10 +2682,10 @@ function rNav(){
   // ── Desktop top nav: only admin btn ──
   if(db.cur){
     nr.innerHTML=adminBtn;
-    if(mobAuth)mobAuth.innerHTML=`<button class="mob-dd-item" onclick="go('acc');closeMobMenu()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg><span>${t('myAccount')}</span></button><button class="mob-dd-item" onclick="db.cur=null;cart=[];saveSession();rNav();go('shop');closeMobMenu()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3"/><path d="M10 11l3-3-3-3M13 8H6"/></svg><span>${t('logout')}</span></button>`;
+    if(mobAuth)mobAuth.innerHTML=`<button class="mob-dd-item" onclick="go('acc');closeMobMenu()"><span style="font-size:20px;line-height:1">${db.cur?ava(db.cur):'👤'}</span><span>${t('myAccount')}</span></button><button class="mob-dd-item" onclick="db.cur=null;cart=[];saveSession();rNav();go('shop');closeMobMenu()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><span>${t('logout')}</span></button>`;
   }else{
     nr.innerHTML=adminBtn;
-    if(mobAuth)mobAuth.innerHTML=`<button class="mob-dd-item" id="mob-nav-reg" onclick="go('reg');closeMobMenu()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M12 2v4M10 4h4"/></svg><span>${t('register')}</span></button><button class="mob-dd-item" id="mob-nav-login" onclick="go('login');closeMobMenu()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M10 3h3a1 1 0 011 1v8a1 1 0 01-1 1h-3"/><path d="M6 11l3-3-3-3M9 8H2"/></svg><span>${t('signIn')}</span></button>`;
+    if(mobAuth)mobAuth.innerHTML=`<button class="mob-dd-item" id="mob-nav-reg" onclick="go('reg');closeMobMenu()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 3v6M16 6h6"/></svg><span>${t('register')}</span></button><button class="mob-dd-item" id="mob-nav-login" onclick="go('login');closeMobMenu()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><span>${t('signIn')}</span></button>`;
   }
 }
 
