@@ -2747,11 +2747,33 @@ function saveSlideEdit(idx){
   rShop(document.getElementById('root'));
   setTimeout(()=>{heroCarouselInit();_heroIdx=idx;heroUpdateTrack();},50);
 }
+// ── Image compression utility ─────────────────────────────────────────────
+// Resizes to maxPx on the longest side and re-encodes as JPEG at given quality.
+// Returns a Promise<string> (base64 data URL). Falls back to original on error.
+function compressImage(dataUrl, maxPx, quality){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.naturalWidth, h=img.naturalHeight;
+      if(w>maxPx||h>maxPx){
+        if(w>=h){ h=Math.round(h*maxPx/w); w=maxPx; }
+        else { w=Math.round(w*maxPx/h); h=maxPx; }
+      }
+      const c=document.createElement('canvas');
+      c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror=()=>resolve(dataUrl);
+    img.src=dataUrl;
+  });
+}
+
 function handleSlideImg(e,idx){
   const f=e.target.files[0];if(!f)return;
   const rd=new FileReader();
   rd.onload=async ev=>{
-    const localSrc=ev.target.result;
+    const localSrc=await compressImage(ev.target.result,1600,0.82);
     // Show immediately from local data
     const slides=getCarouselSlides().map(s=>({...s}));
     slides[idx].bg=localSrc;
@@ -2800,7 +2822,7 @@ function handleHeroImgInline(e){
   const f=e.target.files[0];if(!f)return;
   const rd=new FileReader();
   rd.onload=async ev=>{
-    const localSrc=ev.target.result;
+    const localSrc=await compressImage(ev.target.result,1600,0.82);
     // Show immediately from local data
     db.heroImage=localSrc;sv(true);rShop(document.getElementById('root'));
     setTimeout(()=>{const p=document.getElementById('hero-edit-panel');if(p)p.style.display='flex';},50);
@@ -3371,7 +3393,7 @@ function handleProdImgs(e,pfx){
   files.forEach((f,fi)=>{
     const rd=new FileReader();
     rd.onload=async ev=>{
-      const localSrc=ev.target.result;
+      const localSrc=await compressImage(ev.target.result,1200,0.82);
       // Show image immediately from local data
       const imgIdx=window[pfx+'imgs'].length;
       window[pfx+'imgs'].push(localSrc);
@@ -3557,7 +3579,7 @@ function handleSlideImgAdm(e,idx){
   const f=e.target.files[0];if(!f)return;
   const rd=new FileReader();
   rd.onload=async ev=>{
-    const localSrc=ev.target.result;
+    const localSrc=await compressImage(ev.target.result,1600,0.82);
     // Show immediately from local data
     const slides=getCarouselSlides().map(s=>({...s}));
     slides[idx].bg=localSrc;
@@ -3589,7 +3611,7 @@ function removeSlideImgAdm(idx){
   if(msg)msg.innerHTML=`<div class="m" style="color:var(--color-text-secondary)">${lang==='en'?'Uploading…':lang==='zht'?'上傳中…':'上传中…'}</div>`;
   const rd=new FileReader();
   rd.onload=async ev=>{
-    const localSrc=ev.target.result;
+    const localSrc=await compressImage(ev.target.result,1600,0.82);
     // Show immediately from local data
     db.heroImage=localSrc;
     sv(true);
