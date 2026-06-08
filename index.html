@@ -158,6 +158,12 @@
     .pi { height: 200px; display: flex; align-items: center; justify-content: center; font-size: 80px; background: #f8f8f8; overflow: hidden; position: relative; }
     @media (max-width: 700px) { .pi { height: 180px; font-size: 48px; } .pb { padding: 7px 8px 10px; background: #f2f2f2; } .pn { font-size: 12px; } .price-cny { font-size: 15px; } .ab { font-size: 11px; padding: 5px 10px; } }
     .pi img { width: 100%; height: 100%; object-fit: cover; }
+    /* Skeleton shimmer for images loading from DB */
+    @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+    .img-skeleton { background: linear-gradient(90deg,#ececec 25%,#f5f5f5 50%,#ececec 75%); background-size: 800px 100%; animation: shimmer 1.4s infinite linear; }
+    /* Fade-in once loaded */
+    img { opacity: 0; transition: opacity .25s ease; }
+    img.loaded, img[src^="data:"], img[src^="blob:"] { opacity: 1; }
     .pi-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
     .pi-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.5); cursor: pointer; border: none; padding: 0; transition: background .15s; }
     .pi-dot.on { background: #fff; }
@@ -2769,30 +2775,44 @@ function compressImage(dataUrl, maxPx, quality){
   });
 }
 
+// Returns an instant blob URL from a File for immediate display.
+// Also kicks off background compression+storage and calls onStored(finalSrc)
+// once the compressed base64 is ready to persist.
+function uploadImgInstant(file, maxPx, quality, onStored){
+  const blobUrl = URL.createObjectURL(file);
+  // Background: compress → store → swap to persistent src
+  const rd = new FileReader();
+  rd.onload = async ev => {
+    const compressed = await compressImage(ev.target.result, maxPx, quality);
+    let finalSrc = compressed;
+    if(_fb.uploadImage){
+      const url = await _fb.uploadImage('img/'+Date.now(), compressed);
+      if(url) finalSrc = url;
+    }
+    onStored(finalSrc, blobUrl);
+  };
+  rd.readAsDataURL(file);
+  return blobUrl; // returned synchronously for instant display
+}
+
 function handleSlideImg(e,idx){
   const f=e.target.files[0];if(!f)return;
-  const rd=new FileReader();
-  rd.onload=async ev=>{
-    const localSrc=await compressImage(ev.target.result,1600,0.82);
-    // Show immediately from local data
-    const slides=getCarouselSlides().map(s=>({...s}));
-    slides[idx].bg=localSrc;
-    db.carouselSlides=slides;
+  // Show instantly via blob URL
+  const blobUrl=uploadImgInstant(f,1600,0.82,(finalSrc,oldBlob)=>{
+    const slides2=getCarouselSlides().map(s=>({...s}));
+    // Swap blob URL → persistent src silently
+    slides2[idx].bg=finalSrc;
+    db.carouselSlides=slides2;
     sv(true);
-    rShop(document.getElementById('root'));
-    setTimeout(()=>{heroCarouselInit();_heroIdx=idx;heroUpdateTrack();toggleSlideEdit(idx);},50);
-    // Upload in background, then swap URL
-    if(_fb.uploadImage){
-      const url=await _fb.uploadImage('hero/slide'+idx, localSrc);
-      if(url){
-        const slides2=getCarouselSlides().map(s=>({...s}));
-        slides2[idx].bg=url;
-        db.carouselSlides=slides2;
-        sv(true);
-      }
-    }
-  };
-  rd.readAsDataURL(f);
+    URL.revokeObjectURL(oldBlob);
+    // Patch any live <img> elements showing the blob URL
+    document.querySelectorAll(`img[src="${oldBlob}"]`).forEach(el=>el.src=finalSrc);
+  });
+  const slides=getCarouselSlides().map(s=>({...s}));
+  slides[idx].bg=blobUrl;
+  db.carouselSlides=slides;
+  rShop(document.getElementById('root'));
+  setTimeout(()=>{heroCarouselInit();_heroIdx=idx;heroUpdateTrack();toggleSlideEdit(idx);},50);
 }
 function removeSlideImg(idx){
   const slides=getCarouselSlides().map(s=>({...s}));
@@ -2820,19 +2840,13 @@ function saveHeroText(){
 }
 function handleHeroImgInline(e){
   const f=e.target.files[0];if(!f)return;
-  const rd=new FileReader();
-  rd.onload=async ev=>{
-    const localSrc=await compressImage(ev.target.result,1600,0.82);
-    // Show immediately from local data
-    db.heroImage=localSrc;sv(true);rShop(document.getElementById('root'));
-    setTimeout(()=>{const p=document.getElementById('hero-edit-panel');if(p)p.style.display='flex';},50);
-    // Upload in background, then swap URL
-    if(_fb.uploadImage){
-      const url=await _fb.uploadImage('hero/banner', localSrc);
-      if(url){db.heroImage=url;sv(true);}
-    }
-  };
-  rd.readAsDataURL(f);
+  const blobUrl=uploadImgInstant(f,1600,0.82,(finalSrc,oldBlob)=>{
+    db.heroImage=finalSrc;sv(true);
+    URL.revokeObjectURL(oldBlob);
+    document.querySelectorAll(`img[src="${oldBlob}"]`).forEach(el=>el.src=finalSrc);
+  });
+  db.heroImage=blobUrl;sv(true);rShop(document.getElementById('root'));
+  setTimeout(()=>{const p=document.getElementById('hero-edit-panel');if(p)p.style.display='flex';},50);
 }
 function removeHeroImgInline(){db.heroImage='';sv(true);rShop(document.getElementById('root'));setTimeout(()=>{const p=document.getElementById('hero-edit-panel');if(p)p.style.display='flex';},50);}
 function onSearch(val){
@@ -3391,20 +3405,17 @@ function handleProdImgs(e,pfx){
     }
   }
   files.forEach((f,fi)=>{
-    const rd=new FileReader();
-    rd.onload=async ev=>{
-      const localSrc=await compressImage(ev.target.result,1200,0.82);
-      // Show image immediately from local data
-      const imgIdx=window[pfx+'imgs'].length;
-      window[pfx+'imgs'].push(localSrc);
+    // Show instantly via blob URL, compress+store in background
+    const imgIdx=window[pfx+'imgs'].length;
+    const blobUrl=URL.createObjectURL(f);
+    window[pfx+'imgs'].push(blobUrl);
+    refreshGallery();
+    uploadImgInstant(f,1200,0.82,(finalSrc,oldBlob)=>{
+      window[pfx+'imgs'][imgIdx]=finalSrc;
       refreshGallery();
-      // Upload in background, then swap URL silently
-      if(_fb.uploadImage){
-        const url=await _fb.uploadImage('products/'+prodId+'_'+imgIdx, localSrc);
-        if(url){window[pfx+'imgs'][imgIdx]=url;refreshGallery();}
-      }
-    };
-    rd.readAsDataURL(f);
+      URL.revokeObjectURL(oldBlob);
+      document.querySelectorAll(`img[src="${oldBlob}"]`).forEach(el=>el.src=finalSrc);
+    });
   });
 }
 function startAddProd(){editingProdId='new';rAdmProds(document.getElementById('atc'));const slot=document.getElementById('prod-add-slot');slot.innerHTML=`<div class="prod-edit-form"><div style="font-size:14px;font-weight:500;margin-bottom:12px">${t('addProductTitle')}</div><div id="add-prod-msg"></div>${prodFormHtml(null,'np-')}<div style="display:flex;gap:8px;margin-top:12px"><button class="btn p sm" onclick="saveNewProd()">${t('saveProduct')}</button><button class="btn sm" onclick="editingProdId=null;rAdmProds(document.getElementById('atc'))">${t('cancel')}</button></div></div>`;slot.scrollIntoView({behavior:'smooth',block:'nearest'});}
@@ -3417,19 +3428,23 @@ function deleteProd(id){db.products=db.products.filter(x=>x.id!==id);sv(true);rA
 function qrUploadHtml(pfx,type,existing){const label=t(type==='alipay'?'alipayQr':'wechatQr');const icon=type==='alipay'?`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="4" fill="#1677FF"/><path d="M4 7h16M4 12h8m-8 5h5" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M14 14s3 1.5 5 2.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>`:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="4" fill="#07C160"/><path d="M8 10c3-4 10-3 10 1 0 2.5-2.5 4-5 3l-3 2 1-2.5C9.5 12.5 8 11.5 8 10z" fill="white"/></svg>`;const imgHtml=existing?`<img src="${existing}" class="qr-preview" style="margin:0 auto 6px;display:block"><div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:6px">${t('replaceQr')}</div>`:`<div style="margin-bottom:6px">${icon}</div><div style="font-size:12px;color:var(--color-text-secondary)">${t('uploadQr')} ${label}</div>`;return `<div><div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:5px;font-weight:500;display:flex;align-items:center;gap:5px">${icon} ${label}</div><label class="qr-upload-box" style="display:block;cursor:pointer">${imgHtml}<input type="file" accept="image/*" style="display:none" onchange="handleQr(event,'${pfx}','${type}')"></label>${existing?`<button class="btn sm d" style="margin-top:4px;width:100%;justify-content:center" onclick="clearQr('${pfx}','${type}')">${t('removeQr')}</button>`:''}</div>`;}
 function handleQr(e,pfx,type){
   const f=e.target.files[0];if(!f)return;
+  const blobUrl=URL.createObjectURL(f);
+  window[pfx+type+'Qr']=blobUrl;
+  const tc=document.getElementById('atc');
+  if(atab==='addref')rAdmAddRef(tc);else rAdmRefs(tc);
+  // Compress + store in background, then swap to persistent src
   const rd=new FileReader();
   rd.onload=async ev=>{
-    const localSrc=ev.target.result;
-    // Show immediately from local data
-    window[pfx+type+'Qr']=localSrc;
-    const tc=document.getElementById('atc');
-    if(atab==='addref')rAdmAddRef(tc);else rAdmRefs(tc);
-    // Upload in background, then swap URL silently
+    const compressed=ev.target.result;
+    let finalSrc=compressed;
     if(_fb.uploadImage){
       const refSlug=pfx.replace(/[^a-z0-9]/gi,'');
-      const url=await _fb.uploadImage('referrers/'+refSlug+'_'+type, localSrc);
-      if(url) window[pfx+type+'Qr']=url;
+      const url=await _fb.uploadImage('referrers/'+refSlug+'_'+type, compressed);
+      if(url) finalSrc=url;
     }
+    window[pfx+type+'Qr']=finalSrc;
+    URL.revokeObjectURL(blobUrl);
+    document.querySelectorAll(`img[src="${blobUrl}"]`).forEach(el=>el.src=finalSrc);
   };
   rd.readAsDataURL(f);
 }
@@ -3577,27 +3592,19 @@ function saveAdmSlideEdit(idx){
 }
 function handleSlideImgAdm(e,idx){
   const f=e.target.files[0];if(!f)return;
-  const rd=new FileReader();
-  rd.onload=async ev=>{
-    const localSrc=await compressImage(ev.target.result,1600,0.82);
-    // Show immediately from local data
-    const slides=getCarouselSlides().map(s=>({...s}));
-    slides[idx].bg=localSrc;
-    db.carouselSlides=slides;
+  const blobUrl=uploadImgInstant(f,1600,0.82,(finalSrc,oldBlob)=>{
+    const slides2=getCarouselSlides().map(s=>({...s}));
+    slides2[idx].bg=finalSrc;
+    db.carouselSlides=slides2;
     sv(true);
-    rAdmSettings(document.getElementById('atc'));
-    // Upload in background, then swap URL
-    if(_fb.uploadImage){
-      const url=await _fb.uploadImage('hero/slide'+idx,localSrc);
-      if(url){
-        const slides2=getCarouselSlides().map(s=>({...s}));
-        slides2[idx].bg=url;
-        db.carouselSlides=slides2;
-        sv(true);
-      }
-    }
-  };
-  rd.readAsDataURL(f);
+    URL.revokeObjectURL(oldBlob);
+    document.querySelectorAll(`img[src="${oldBlob}"]`).forEach(el=>el.src=finalSrc);
+  });
+  const slides=getCarouselSlides().map(s=>({...s}));
+  slides[idx].bg=blobUrl;
+  db.carouselSlides=slides;
+  sv(true);
+  rAdmSettings(document.getElementById('atc'));
 }
 function removeSlideImgAdm(idx){
   const slides=getCarouselSlides().map(s=>({...s}));
@@ -3609,21 +3616,15 @@ function removeSlideImgAdm(idx){
   const f=e.target.files[0];if(!f)return;
   const msg=document.getElementById('hero-img-msg');
   if(msg)msg.innerHTML=`<div class="m" style="color:var(--color-text-secondary)">${lang==='en'?'Uploading…':lang==='zht'?'上傳中…':'上传中…'}</div>`;
-  const rd=new FileReader();
-  rd.onload=async ev=>{
-    const localSrc=await compressImage(ev.target.result,1600,0.82);
-    // Show immediately from local data
-    db.heroImage=localSrc;
-    sv(true);
-    if(msg)msg.innerHTML=`<div class="m s">${lang==='en'?'Banner image saved!':lang==='zht'?'橫幅圖片已儲存！':'横幅图片已保存！'}</div>`;
-    rAdmSettings(document.getElementById('atc'));
-    // Upload in background, then swap URL silently
-    if(_fb.uploadImage){
-      const url=await _fb.uploadImage('hero/banner', localSrc);
-      if(url){db.heroImage=url;sv(true);}
-    }
-  };
-  rd.readAsDataURL(f);
+  const blobUrl=uploadImgInstant(f,1600,0.82,(finalSrc,oldBlob)=>{
+    db.heroImage=finalSrc;sv(true);
+    URL.revokeObjectURL(oldBlob);
+    document.querySelectorAll(`img[src="${oldBlob}"]`).forEach(el=>el.src=finalSrc);
+  });
+  db.heroImage=blobUrl;
+  sv(true);
+  if(msg)msg.innerHTML=`<div class="m s">${lang==='en'?'Banner image saved!':lang==='zht'?'橫幅圖片已儲存！':'横幅图片已保存！'}</div>`;
+  rAdmSettings(document.getElementById('atc'));
 }
 function removeHeroImg(){db.heroImage='';sv(true);rAdmSettings(document.getElementById('atc'));}
 function saveHeroTextSettings(){const title=document.getElementById('stg-hero-title')?.value.trim(),sub=document.getElementById('stg-hero-sub')?.value.trim(),msg=document.getElementById('hero-text-msg');if(title!==undefined)db.heroTextTitle=title;if(sub!==undefined)db.heroTextSub=sub;sv(true);if(msg)msg.innerHTML='<div class="m s" style="font-size:12px">'+(lang==='en'?'Text saved!':lang==='zht'?'文字已儲存！':'文字已保存！')+'</div>';setTimeout(()=>{if(msg)msg.innerHTML='';},2000);}function ckAS2(pw){const b=document.getElementById('stg-sb');if(!b)return;if(!pw){b.style.width='0%';return;}let s=0;if(pw.length>=8)s++;if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;b.style.width=['0%','25%','50%','75%','100%'][s];b.style.background=['#E24B4A','#E24B4A','#EF9F27','#7a9c5a','#314021'][s];}
@@ -3633,6 +3634,34 @@ function toggleFeeEdit(){const ed=document.getElementById('fee-edit'),disp=docum
 function saveFeeRate(){const inp=document.getElementById('fee-input'),msg=document.getElementById('fee-msg');const v=parseFloat(inp.value);if(isNaN(v)||v<0||v>100){msg.innerHTML=`<div class="m e" style="font-size:11px;padding:4px 8px">${lang==='en'?'Enter 0–100':(lang==='zht'?'請輸入 0–100':'请输入 0–100')}</div>`;return;}FEE_RATE=parseFloat((v/100).toFixed(6));sv(true);document.getElementById('fee-display').textContent=(v).toFixed(2).replace(/\.?0+$/,'')+'%';document.getElementById('fee-edit').style.display='none';msg.innerHTML='';}
 
 // Boot is handled by _boot() above — triggered once Supabase adapter is ready
+
+// ── Image fade-in: mark images as loaded once they decode ──
+document.addEventListener('DOMContentLoaded', () => {
+  function applyImgFadeIn(root) {
+    root.querySelectorAll('img').forEach(img => {
+      if (img.complete && img.naturalWidth > 0) {
+        img.classList.add('loaded');
+      } else {
+        img.addEventListener('load', () => img.classList.add('loaded'), { once: true });
+      }
+      // Mark blob/data URLs as instantly loaded (no network wait)
+      const src = img.getAttribute('src') || '';
+      if (src.startsWith('blob:') || src.startsWith('data:')) {
+        img.classList.add('loaded');
+      }
+    });
+  }
+  // Watch for new images added dynamically
+  const obs = new MutationObserver(muts => {
+    muts.forEach(m => m.addedNodes.forEach(n => {
+      if (n.nodeType !== 1) return;
+      if (n.tagName === 'IMG') applyImgFadeIn(n.parentElement || document);
+      else if (n.querySelectorAll) applyImgFadeIn(n);
+    }));
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+  applyImgFadeIn(document);
+});
 </script>
 
 <script>
