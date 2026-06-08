@@ -158,12 +158,6 @@
     .pi { height: 200px; display: flex; align-items: center; justify-content: center; font-size: 80px; background: #f8f8f8; overflow: hidden; position: relative; }
     @media (max-width: 700px) { .pi { height: 180px; font-size: 48px; } .pb { padding: 7px 8px 10px; background: #f2f2f2; } .pn { font-size: 12px; } .price-cny { font-size: 15px; } .ab { font-size: 11px; padding: 5px 10px; } }
     .pi img { width: 100%; height: 100%; object-fit: cover; }
-    /* Skeleton shimmer for images loading from DB */
-    @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
-    .img-skeleton { background: linear-gradient(90deg,#ececec 25%,#f5f5f5 50%,#ececec 75%); background-size: 800px 100%; animation: shimmer 1.4s infinite linear; }
-    /* Fade-in once loaded */
-    img { opacity: 0; transition: opacity .25s ease; }
-    img.loaded, img[src^="data:"], img[src^="blob:"] { opacity: 1; }
     .pi-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
     .pi-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.5); cursor: pointer; border: none; padding: 0; transition: background .15s; }
     .pi-dot.on { background: #fff; }
@@ -990,36 +984,23 @@
       }
     }
 
-    // ── onSnapshot — poll main doc every 5s; re-fetch allimages when version bumps ──
-    // allimages is large so we only re-fetch it when _imagesVersion changes in the main doc.
+    // ── onSnapshot(ref, callback) — polling every 30s (replaces Realtime) ───
+    // Only the main shopdata doc is polled; image/text docs are large and
+    // change rarely — they are fetched once at boot, which is sufficient.
     const _pollTimers = {};
-    let _lastImagesVersion = null;
-    let _allImagesCallback = null;
-
     function pgOnSnapshot(ref, callback){
       const key = ref._id;
-      if(_pollTimers[key]) return;
+      if(_pollTimers[key]) return; // already registered
+      // Fire immediately with current value
       pgGetDoc(ref).then(snap=>{ if(snap.exists()) callback(snap); }).catch(()=>{});
+      // Then poll every 30 seconds (only for main doc to detect other-device changes)
       if(key === MAIN_DOC){
         _pollTimers[key] = setInterval(async()=>{
           try{
             const snap = await pgGetDoc(ref);
-            if(!snap.exists()) return;
-            callback(snap);
-            const v = snap.data()._imagesVersion;
-            if(v && v !== _lastImagesVersion){
-              _lastImagesVersion = v;
-              if(_allImagesCallback){
-                try{
-                  const imgSnap = await pgGetDoc({_id:'allimages'});
-                  if(imgSnap.exists()) _allImagesCallback(imgSnap);
-                }catch(e){}
-              }
-            }
+            if(snap.exists()) callback(snap);
           }catch(e){}
-        }, 5000);
-      } else if(key === 'allimages'){
-        _allImagesCallback = callback;
+        }, 30000);
       }
     }
 
@@ -1949,7 +1930,7 @@ function restoreSession(){
 }
 
 const SYNC_KEYS = ['products','referrers','users','adminEmail','adminPassword',
-  'adminCreated','heroTextTitle','heroTextSub','feeRate','carouselSlides','_imagesVersion'];
+  'adminCreated','heroTextTitle','heroTextSub','feeRate','carouselSlides'];
 // Image-only keys stored in a separate Supabase row to keep the main
 // doc small and fast. heroImage + per-product imgs arrays live here.
 const IMG_DOC_KEY = 'netiva_images';
@@ -1960,13 +1941,15 @@ let _fbReady = false;
 window._fb = { fsdb:null, storeDoc:null, setDoc:null, getDoc:null, onSnapshot:null, doc:null };
 const _fb = window._fb;
 
-// ── Image storage: ONE row 'allimages' holds everything ──────────────────────
-// { heroImage, heroSlides:{idx:bg}, pi_p1:[...], pi_p2:[...],
-//   aqr_r1, wqr_r1, ct_p1:{en,zh,zht}, ... }
-// One fetch on boot, one write on save — no per-product round-trips.
+// ── Image storage: one Supabase row per product, one for hero, one per referrer ──
+// netiva_store row 'hero'      → data: { heroImage: '...' }
+// netiva_store row 'img_p1'    → data: { imgs: [...base64...] }
+// netiva_store row 'img_p2'    → data: { imgs: [...base64...] }
+// netiva_store row 'ref_r1'    → data: { alipayQr: '...', wechatQr: '...' }
+// This gives each item its own budget — no more size limits.
 
 function _buildMainPayload(){
-  // Strip imgs/img/content/QRs from products/referrers — metadata only
+  // Strip imgs/img from products and QRs from referrers — keep only metadata
   const payload={};
   SYNC_KEYS.forEach(k=>{
     if(k==='products'){
@@ -1984,22 +1967,57 @@ function _buildMainPayload(){
   return payload;
 }
 
-// Build the single allimages doc from current db state
-function _buildAllImagesPayload(){
+// Apply a single product image doc { imgs:[...] } into db
+function _applyProdImgDoc(prodId, data){
+  if(!data) return;
+  const prod=(db.products||[]).find(p=>p.id===prodId);
+  if(!prod) return;
+  if(Array.isArray(data.imgs)){ prod.imgs=data.imgs; prod.img=data.imgs[0]||''; }
+}
+// Apply a single product text doc { content_en, content_zh } into db
+function _applyProdTextDoc(prodId, data){
+  if(!data) return;
+  const prod=(db.products||[]).find(p=>p.id===prodId);
+  if(!prod) return;
+  if(data.content_en!==undefined) prod.content_en=data.content_en;
+  if(data.content_zh!==undefined) prod.content_zh=data.content_zh;
+  if(data.content_zht!==undefined) prod.content_zht=data.content_zht;
+}
+// Apply hero doc
+function _applyHeroDoc(data){
+  if(!data) return;
+  if(data.heroImage!==undefined) db.heroImage=data.heroImage;
+}
+// Apply referrer QR doc
+function _applyRefDoc(refId, data){
+  if(!data) return;
+  const ref=(db.referrers||[]).find(r=>r.id===refId);
+  if(!ref) return;
+  if(data.alipayQr!==undefined) ref.alipayQr=data.alipayQr;
+  if(data.wechatQr!==undefined) ref.wechatQr=data.wechatQr;
+}
+
+// Legacy: still support reading old shopimages doc during migration
+function _applyImgPayload(data){
+  if(!data) return;
+  if(data.heroImage!==undefined) db.heroImage=data.heroImage;
+  (db.products||[]).forEach(prod=>{
+    const key='pi_'+prod.id;
+    if(data[key]!==undefined){ prod.imgs=data[key]; prod.img=data[key][0]||''; }
+  });
+  (db.referrers||[]).forEach(ref=>{
+    if(data['aqr_'+ref.id]!==undefined) ref.alipayQr=data['aqr_'+ref.id];
+    if(data['wqr_'+ref.id]!==undefined) ref.wechatQr=data['wqr_'+ref.id];
+  });
+}
+
+// Build localStorage cache of all images (flat, for fast boot)
+function _buildLocalImgCache(){
   const p={};
   if(db.heroImage!==undefined) p.heroImage=db.heroImage;
-  // Carousel slide backgrounds
-  const slides=db.carouselSlides||[];
-  if(slides.length){
-    const heroSlides={};
-    slides.forEach((s,i)=>{ if(s.bg) heroSlides[i]=s.bg; });
-    if(Object.keys(heroSlides).length) p.heroSlides=heroSlides;
-  }
   (db.products||[]).forEach(prod=>{
-    const imgs=prod.imgs&&prod.imgs.length ? prod.imgs : (prod.img ? [prod.img] : []);
-    if(imgs.length) p['pi_'+prod.id]=imgs;
-    if(prod.content_en||prod.content_zh||prod.content_zht)
-      p['ct_'+prod.id]={en:prod.content_en||'',zh:prod.content_zh||'',zht:prod.content_zht||''};
+    if(prod.imgs&&prod.imgs.length) p['pi_'+prod.id]=prod.imgs;
+    else if(prod.img) p['pi_'+prod.id]=[prod.img];
   });
   (db.referrers||[]).forEach(ref=>{
     if(ref.alipayQr) p['aqr_'+ref.id]=ref.alipayQr;
@@ -2008,116 +2026,165 @@ function _buildAllImagesPayload(){
   return p;
 }
 
-// Apply the allimages doc into db
-function _applyAllImages(data){
-  if(!data) return;
-  if(data.heroImage!==undefined) db.heroImage=data.heroImage;
-  // Carousel slide backgrounds
-  if(data.heroSlides && db.carouselSlides){
-    db.carouselSlides=db.carouselSlides.map((s,i)=>
-      data.heroSlides[i]!==undefined ? {...s, bg:data.heroSlides[i]} : s
-    );
-  }
-  (db.products||[]).forEach(prod=>{
-    const imgs=data['pi_'+prod.id];
-    if(Array.isArray(imgs)){ prod.imgs=imgs; prod.img=imgs[0]||''; }
-    const ct=data['ct_'+prod.id];
-    if(ct){
-      if(ct.en!==undefined) prod.content_en=ct.en;
-      if(ct.zh!==undefined) prod.content_zh=ct.zh;
-      if(ct.zht!==undefined) prod.content_zht=ct.zht;
-    }
-  });
-  (db.referrers||[]).forEach(ref=>{
-    if(data['aqr_'+ref.id]!==undefined) ref.alipayQr=data['aqr_'+ref.id];
-    if(data['wqr_'+ref.id]!==undefined) ref.wechatQr=data['wqr_'+ref.id];
-  });
-}
-
-// Legacy: support old per-item docs and shopimages format during migration
-function _applyImgPayload(data){
-  if(!data) return;
-  if(data.heroImage!==undefined) db.heroImage=data.heroImage;
-  (db.products||[]).forEach(prod=>{
-    const key='pi_'+prod.id;
-    if(data[key]!==undefined){ prod.imgs=data[key]; prod.img=data[key][0]||''; }
-    const ct=data['ct_'+prod.id];
-    if(ct){
-      if(ct.en!==undefined) prod.content_en=ct.en;
-      if(ct.zh!==undefined) prod.content_zh=ct.zh;
-      if(ct.zht!==undefined) prod.content_zht=ct.zht;
-    }
-  });
-  (db.referrers||[]).forEach(ref=>{
-    if(data['aqr_'+ref.id]!==undefined) ref.alipayQr=data['aqr_'+ref.id];
-    if(data['wqr_'+ref.id]!==undefined) ref.wechatQr=data['wqr_'+ref.id];
-  });
-}
-
-// Build localStorage cache (same flat format as allimages)
-function _buildLocalImgCache(){ return _buildAllImagesPayload(); }
-
-// ── Write queue: coalesce rapid saves into a single DB write ─────────────────
+// ── Dirty-doc tracking ───────────────────────────────────────────────────────
+// Instead of re-uploading every row on every sv() call, we track exactly which
+// Supabase rows have pending changes and flush only those.
+const _dirtyDocs={}; // docId -> payload to write
 let _flushTimer=null;
-let _mainDirty=false;
-let _imgsDirty=false;
 
+// Mark a specific doc as needing a write. payload=null means "main store doc".
+function _markDirty(docId, payload){
+  _dirtyDocs[docId]=payload;
+}
+
+// Flush all dirty docs to Firestore immediately (no delay).
 async function _flushDirty(){
   if(_flushTimer){ clearTimeout(_flushTimer); _flushTimer=null; }
   if(typeof _fb?.setDoc !== 'function') return;
-  const writeMain=_mainDirty, writeImgs=_imgsDirty;
-  _mainDirty=false; _imgsDirty=false;
-  try{
-    if(writeMain) await _fb.setDoc(_fb.storeDoc, _buildMainPayload(), {merge:true});
-  }catch(e){ console.warn('PG main write failed:',e); }
-  try{
-    if(writeImgs){
-      const ref=_fb.doc(_fb.fsdb,'netiva','allimages');
-      await _fb.setDoc(ref, _buildAllImagesPayload(), {merge:false});
-    }
-  }catch(e){ console.warn('PG allimages write failed:',e); }
+  const ids=Object.keys(_dirtyDocs);
+  if(!ids.length) return;
+  // Snapshot and clear immediately so concurrent calls don't double-write
+  const toWrite={..._dirtyDocs};
+  ids.forEach(id=>{ delete _dirtyDocs[id]; });
+  await Promise.all(ids.map(async id=>{
+    try{
+      if(id==='__main__'){
+        await _fb.setDoc(_fb.storeDoc, _buildMainPayload(), {merge:true});
+      } else {
+        const ref=_fb.doc(_fb.fsdb,'netiva',id);
+        await _fb.setDoc(ref, toWrite[id], {merge:true});
+      }
+    }catch(e){ console.warn('Supabase write failed ('+id+'):',e); }
+  }));
 }
 
+// Debounced flush — used for rapid-fire changes (e.g. typing in a field).
 function _scheduleDirtyFlush(delayMs=150){
   if(_flushTimer) clearTimeout(_flushTimer);
   _flushTimer=setTimeout(()=>{ _flushTimer=null; _flushDirty(); }, delayMs);
 }
 
-// sv(immediate) — updates localStorage instantly, queues DB write
+// sv(immediate) — call with immediate=true from explicit "Save" button handlers
+// so changes appear for other users without any delay.
 function sv(immediate=false){
   db.feeRate = FEE_RATE;
-  db._imagesVersion = Date.now().toString(36);
-  _mainDirty=true; _imgsDirty=true;
+  // Always update localStorage instantly
   try{
-    localStorage.setItem('netiva_shop', JSON.stringify(db));
-    localStorage.setItem(IMG_DOC_KEY, JSON.stringify(_buildAllImagesPayload()));
+    const mainSnap={...db, products:_buildMainPayload().products, referrers:_buildMainPayload().referrers};
+    localStorage.setItem('netiva_shop', JSON.stringify(mainSnap));
+    localStorage.setItem(IMG_DOC_KEY, JSON.stringify(_buildLocalImgCache()));
   }catch(e){}
   if(!_fbReady) return;
+
+  // Main metadata row — always dirty when sv() is called
+  _markDirty('__main__', null);
+
+  // Hero image
+  if(db.heroImage) _markDirty('hero', {heroImage: db.heroImage});
+
+  // Only dirty the image/text docs for products that have content
+  // (we don't re-dirty every product — callers use svProd() for targeted writes)
+  (db.products||[]).forEach(prod=>{
+    const imgs=prod.imgs&&prod.imgs.length ? prod.imgs : (prod.img ? [prod.img] : []);
+    if(imgs.length) _markDirty('img_'+prod.id, {imgs});
+    const hasText=prod.content_en||prod.content_zh||prod.content_zht;
+    if(hasText) _markDirty('text_'+prod.id, {content_en:prod.content_en||'', content_zh:prod.content_zh||'', content_zht:prod.content_zht||''});
+  });
+
+  (db.referrers||[]).forEach(ref=>{
+    if(ref.alipayQr||ref.wechatQr) _markDirty('ref_'+ref.id, {alipayQr:ref.alipayQr||'', wechatQr:ref.wechatQr||''});
+  });
+
   if(immediate){ _flushDirty(); }
   else { _scheduleDirtyFlush(150); }
 }
 
-// svProd — same as sv; with unified allimages doc there's no per-product targeting needed
-function svProd(prodId, immediate=false){ sv(immediate); }
+// Targeted save for a single product — only uploads docs that belong to it.
+// Pass immediate=true from explicit Save button handlers.
+function svProd(prodId, immediate=false){
+  db.feeRate = FEE_RATE;
+  try{
+    const mainSnap={...db, products:_buildMainPayload().products, referrers:_buildMainPayload().referrers};
+    localStorage.setItem('netiva_shop', JSON.stringify(mainSnap));
+    localStorage.setItem(IMG_DOC_KEY, JSON.stringify(_buildLocalImgCache()));
+  }catch(e){}
+  if(!_fbReady) return;
+
+  _markDirty('__main__', null);
+  const prod=(db.products||[]).find(p=>p.id===prodId);
+  if(prod){
+    const imgs=prod.imgs&&prod.imgs.length ? prod.imgs : (prod.img ? [prod.img] : []);
+    if(imgs.length) _markDirty('img_'+prodId, {imgs});
+    const hasText=prod.content_en||prod.content_zh||prod.content_zht;
+    if(hasText) _markDirty('text_'+prodId, {content_en:prod.content_en||'', content_zh:prod.content_zh||'', content_zht:prod.content_zht||''});
+  }
+  if(immediate){ _flushDirty(); }
+  else { _scheduleDirtyFlush(150); }
+}
 
 // Track which doc IDs already have live listeners so we never double-register
 const _liveListeners=new Set();
 
-// During the initial Pass-2 image fetch we don't want snapshot callbacks
-// triggering re-renders before we're done loading.
+// During the initial Pass-2 image fetch we don't want every onSnapshot callback
+// (which fires immediately upon registration with the current value) to trigger
+// a re-render, because Pass-2 calls render() itself once everything is loaded.
+// Set to true while Pass-2 is running; snapshot callbacks check this before rendering.
 let _bootImgFetchInProgress=false;
 
 // Debounced render: coalesces rapid snapshot events into a single repaint
 let _renderDebounceTimer=null;
 function _debouncedRender(){
-  if(_bootImgFetchInProgress) return;
+  if(_bootImgFetchInProgress) return; // Pass-2 will render when done
   if(_renderDebounceTimer) clearTimeout(_renderDebounceTimer);
   _renderDebounceTimer=setTimeout(()=>{_renderDebounceTimer=null;try{render();}catch(e){}},120);
 }
 
-// No-ops kept for compatibility (all listeners are on allimages now)
-function _attachProdListeners(prod){}
-function _attachRefListener(ref){}
+// Register onSnapshot listeners for a product doc that didn't exist at boot time
+function _attachProdListeners(prod){
+  if(!_fb.onSnapshot||!_fb.fsdb) return;
+  const imgDocId='img_'+prod.id;
+  const txtDocId='text_'+prod.id;
+  if(!_liveListeners.has(imgDocId)){
+    _liveListeners.add(imgDocId);
+    try{
+      const ref=_fb.doc(_fb.fsdb,'netiva',imgDocId);
+      _fb.onSnapshot(ref,(snap)=>{
+        if(!snap.exists()) return;
+        _applyProdImgDoc(prod.id,snap.data());
+        try{localStorage.setItem(IMG_DOC_KEY,JSON.stringify(_buildLocalImgCache()));}catch(e){}
+        if(!db.adm){_debouncedRender();}
+      });
+    }catch(e){console.warn('Supabase listener attach failed for '+imgDocId,e);}
+  }
+  if(!_liveListeners.has(txtDocId)){
+    _liveListeners.add(txtDocId);
+    try{
+      const ref=_fb.doc(_fb.fsdb,'netiva',txtDocId);
+      _fb.onSnapshot(ref,(snap)=>{
+        if(!snap.exists()) return;
+        _applyProdTextDoc(prod.id,snap.data());
+        _debouncedRender();
+      });
+    }catch(e){console.warn('Supabase listener attach failed for '+txtDocId,e);}
+  }
+}
+
+// Register onSnapshot listener for a referrer QR doc
+function _attachRefListener(ref){
+  if(!_fb.onSnapshot||!_fb.fsdb) return;
+  const docId='ref_'+ref.id;
+  if(_liveListeners.has(docId)) return;
+  _liveListeners.add(docId);
+  try{
+    const docRef=_fb.doc(_fb.fsdb,'netiva',docId);
+    _fb.onSnapshot(docRef,(snap)=>{
+      if(!snap.exists()) return;
+      _applyRefDoc(ref.id,snap.data());
+      try{localStorage.setItem(IMG_DOC_KEY,JSON.stringify(_buildLocalImgCache()));}catch(e){}
+      if(!db.adm){_debouncedRender();}
+    });
+  }catch(e){console.warn('Supabase listener attach failed for '+docId,e);}
+}
 
 
 
@@ -2175,6 +2242,7 @@ window._boot = async function _boot(){
   try{
     const cached=localStorage.getItem('netiva_shop');
     if(cached){ const p=JSON.parse(cached); _applyRemote(p); hadCache=true; }
+    // Also restore cached images (flat legacy format works for both old and new)
     const cachedImgs=localStorage.getItem(IMG_DOC_KEY);
     if(cachedImgs){ _applyImgPayload(JSON.parse(cachedImgs)); }
   }catch(e){}
@@ -2193,12 +2261,13 @@ window._boot = async function _boot(){
     if(snap.exists()){
       _applyRemote(snap.data());
     } else {
+      // First ever run — seed Firestore with defaults
       const mainSeed=_buildMainPayload();
       mainSeed.products=DEFAULT_PRODS.map(p=>{const{img,imgs,...r}=p;return r;});
       await _fb.setDoc(_fb.storeDoc, mainSeed);
     }
   }catch(e){
-    console.warn('PG main read failed:',e);
+    console.warn('Supabase main read failed:',e);
     if(!hadCache){
       const warn=document.createElement('div');
       warn.style.cssText='position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#FFF3CD;border:1px solid #EAD0A8;color:#854F0B;font-size:12px;padding:8px 16px;border-radius:8px;z-index:9999;max-width:420px;text-align:center';
@@ -2212,92 +2281,143 @@ window._boot = async function _boot(){
   rNav();
   try{ go('shop'); }catch(e){}
 
-  // ── Pass 2: fetch ONE allimages row (all images/QRs/content in a single request) ──
+  // ── Pass 2: fetch all image rows in background (non-blocking) ────────────
+  // Set flag so snapshot callbacks that fire during listener registration
+  // (Firestore fires onSnapshot immediately with the current value) don't
+  // trigger extra re-renders while we're still loading everything.
   _bootImgFetchInProgress=true;
   (async()=>{
     try{
-      const allImgsRef=_fb.doc(_fb.fsdb,'netiva','allimages');
-      const allImgsSnap=await _fb.getDoc(allImgsRef);
-      if(allImgsSnap.exists()){
-        _applyAllImages(allImgsSnap.data());
-      } else {
-        // First run or migration: try reading old per-item rows and consolidate
-        await _migrateOldDocsToAllImages();
-      }
-      try{localStorage.setItem(IMG_DOC_KEY, JSON.stringify(_buildAllImagesPayload()));}catch(e){}
-    }catch(e){ console.warn('PG allimages read failed:',e); }
-    _bootImgFetchInProgress=false;
-    try{render();}catch(e){}
+      // Fetch hero image doc
+      const heroRef=_fb.doc(_fb.fsdb,'netiva','hero');
+      const heroSnap=await _fb.getDoc(heroRef);
+      if(heroSnap.exists()) _applyHeroDoc(heroSnap.data());
+
+      // Fetch per-product image docs
+      await Promise.all((db.products||[]).map(async prod=>{
+        try{
+          const ref=_fb.doc(_fb.fsdb,'netiva','img_'+prod.id);
+          const snap=await _fb.getDoc(ref);
+          if(snap.exists()) _applyProdImgDoc(prod.id, snap.data());
+        }catch(e){ console.warn('Supabase img read failed for '+prod.id,e); }
+      }));
+
+      // Fetch per-product extended text docs
+      await Promise.all((db.products||[]).map(async prod=>{
+        try{
+          const ref=_fb.doc(_fb.fsdb,'netiva','text_'+prod.id);
+          const snap=await _fb.getDoc(ref);
+          if(snap.exists()) _applyProdTextDoc(prod.id, snap.data());
+        }catch(e){ console.warn('Supabase text read failed for '+prod.id,e); }
+      }));
+
+      // Fetch per-referrer QR docs
+      await Promise.all((db.referrers||[]).map(async ref=>{
+        try{
+          const docRef=_fb.doc(_fb.fsdb,'netiva','ref_'+ref.id);
+          const snap=await _fb.getDoc(docRef);
+          if(snap.exists()) _applyRefDoc(ref.id, snap.data());
+        }catch(e){ console.warn('Supabase ref img read failed for '+ref.id,e); }
+      }));
+
+      // Also try old shopimages row for migration (in case data is still there)
+      try{
+        const oldRef=_fb.doc(_fb.fsdb,'netiva','shopimages');
+        const oldSnap=await _fb.getDoc(oldRef);
+        if(oldSnap.exists()) _applyImgPayload(oldSnap.data());
+      }catch(e){}
+
+      // Cache all images locally
+      try{localStorage.setItem(IMG_DOC_KEY, JSON.stringify(_buildLocalImgCache()));}catch(e){}
+      // Clear the boot flag before the final render so snapshot callbacks can
+      // trigger renders normally from this point on.
+      _bootImgFetchInProgress=false;
+      // Always re-render after images/text have loaded so they appear for everyone
+      try{render();}catch(e){}
+      // Migrate any legacy base64 images to Storage in the background
+      setTimeout(()=>{ _migrateBase64ToStorage().catch(e=>console.warn('[migrate] error:',e)); }, 2000);
+    }catch(e){ _bootImgFetchInProgress=false; console.warn('Supabase image read failed:',e); }
   })();
 
-  // ── Live polling: main doc every 30s, allimages every 30s ────────────────
+  // ── Live listeners ────────────────────────────────────────────────────────
   try{
     _fb.onSnapshot(_fb.storeDoc, (snap)=>{
       if(!snap.exists()) return;
       _applyRemote(snap.data());
       if(!db.adm){ _debouncedRender(); }
     });
-  }catch(e){ console.warn('PG main listener failed:',e); }
+  }catch(e){ console.warn('Supabase main listener failed:',e); }
 
+  // Live listener for hero image
   try{
-    const allImgsRef=_fb.doc(_fb.fsdb,'netiva','allimages');
-    _fb.onSnapshot(allImgsRef,(snap)=>{
+    const heroRef=_fb.doc(_fb.fsdb,'netiva','hero');
+    _fb.onSnapshot(heroRef,(snap)=>{
       if(!snap.exists()) return;
-      _applyAllImages(snap.data());
-      try{localStorage.setItem(IMG_DOC_KEY,JSON.stringify(_buildAllImagesPayload()));}catch(e){}
+      _applyHeroDoc(snap.data());
+      try{localStorage.setItem(IMG_DOC_KEY,JSON.stringify(_buildLocalImgCache()));}catch(e){}
       if(!db.adm){ _debouncedRender(); }
     });
-  }catch(e){ console.warn('PG allimages listener failed:',e); }
+  }catch(e){ console.warn('Supabase hero listener failed:',e); }
+
+  // Live listeners for each product image/text doc (uses dedup helper)
+  (db.products||[]).forEach(prod=>{ _attachProdListeners(prod); });
+
+  // Live listeners for each referrer QR doc (uses dedup helper)
+  (db.referrers||[]).forEach(ref=>{ _attachRefListener(ref); });
 }
 
 
-// ── One-time migration: read old per-item rows and write consolidated allimages ──
-async function _migrateOldDocsToAllImages(){
-  try{
-    // Try hero row
-    try{
-      const heroSnap=await _fb.getDoc(_fb.doc(_fb.fsdb,'netiva','hero'));
-      if(heroSnap.exists()&&heroSnap.data().heroImage) db.heroImage=heroSnap.data().heroImage;
-    }catch(e){}
-    // Try per-product rows
-    await Promise.all((db.products||[]).map(async prod=>{
-      try{
-        const s=await _fb.getDoc(_fb.doc(_fb.fsdb,'netiva','img_'+prod.id));
-        if(s.exists()&&s.data().imgs){ prod.imgs=s.data().imgs; prod.img=s.data().imgs[0]||''; }
-      }catch(e){}
-      try{
-        const s=await _fb.getDoc(_fb.doc(_fb.fsdb,'netiva','text_'+prod.id));
-        if(s.exists()){
-          if(s.data().content_en!==undefined) prod.content_en=s.data().content_en;
-          if(s.data().content_zh!==undefined) prod.content_zh=s.data().content_zh;
-          if(s.data().content_zht!==undefined) prod.content_zht=s.data().content_zht;
-        }
-      }catch(e){}
+// ── One-time migration: move any legacy base64 images from DB rows to Supabase Storage ──
+// Runs silently in background after boot. Only migrates if uploadImage is available
+// and the stored value starts with 'data:image'. Safe to run repeatedly (idempotent).
+async function _migrateBase64ToStorage(){
+  if(!_fb.uploadImage || !_fb.isBase64) return;
+  let migrated=false;
+
+  // Hero image
+  if(_fb.isBase64(db.heroImage)){
+    console.log('[migrate] uploading hero image to Storage...');
+    const url=await _fb.uploadImage('hero/banner', db.heroImage);
+    if(url){ db.heroImage=url; _markDirty('hero',{heroImage:url}); migrated=true; }
+  }
+
+  // Product images
+  for(const prod of (db.products||[])){
+    const imgs=prod.imgs&&prod.imgs.length?prod.imgs:(prod.img?[prod.img]:[]);
+    const needsMigration=imgs.some(s=>_fb.isBase64(s));
+    if(!needsMigration) continue;
+    console.log('[migrate] uploading images for product',prod.id);
+    const newImgs=await Promise.all(imgs.map(async(src,i)=>{
+      if(!_fb.isBase64(src)) return src;
+      const url=await _fb.uploadImage('products/'+prod.id+'_'+i, src);
+      return url||src;
     }));
-    // Try per-referrer rows
-    await Promise.all((db.referrers||[]).map(async ref=>{
-      try{
-        const s=await _fb.getDoc(_fb.doc(_fb.fsdb,'netiva','ref_'+ref.id));
-        if(s.exists()){
-          if(s.data().alipayQr) ref.alipayQr=s.data().alipayQr;
-          if(s.data().wechatQr) ref.wechatQr=s.data().wechatQr;
-        }
-      }catch(e){}
-    }));
-    // Try old shopimages row
-    try{
-      const s=await _fb.getDoc(_fb.doc(_fb.fsdb,'netiva','shopimages'));
-      if(s.exists()) _applyImgPayload(s.data());
-    }catch(e){}
-    // Write everything into the new single allimages row
-    if(_fbReady){
-      const ref=_fb.doc(_fb.fsdb,'netiva','allimages');
-      await _fb.setDoc(ref, _buildAllImagesPayload(), {merge:false});
-      console.log('PG migration: old image docs consolidated into allimages.');
+    prod.imgs=newImgs; prod.img=newImgs[0]||'';
+    _markDirty('img_'+prod.id,{imgs:newImgs});
+    migrated=true;
+  }
+
+  // Referrer QR codes
+  for(const ref of (db.referrers||[])){
+    let refMigrated=false;
+    if(_fb.isBase64(ref.alipayQr)){
+      const url=await _fb.uploadImage('referrers/'+ref.id+'_alipay', ref.alipayQr);
+      if(url){ ref.alipayQr=url; refMigrated=true; }
     }
-  }catch(e){ console.warn('PG migration failed:',e); }
-}
+    if(_fb.isBase64(ref.wechatQr)){
+      const url=await _fb.uploadImage('referrers/'+ref.id+'_wechat', ref.wechatQr);
+      if(url){ ref.wechatQr=url; refMigrated=true; }
+    }
+    if(refMigrated){ _markDirty('ref_'+ref.id,{alipayQr:ref.alipayQr||'',wechatQr:ref.wechatQr||''}); migrated=true; }
+  }
 
+  if(migrated){
+    console.log('[migrate] flushing migrated URLs to DB...');
+    await _flushDirty();
+    try{localStorage.setItem(IMG_DOC_KEY,JSON.stringify(_buildLocalImgCache()));}catch(e){}
+    console.log('[migrate] done — base64 images replaced with Storage URLs. DB egress will drop significantly.');
+  }
+}
 
 // Wait for Supabase adapter to be ready, then boot
 // Safety fallback: if Supabase never loads (e.g. blocked/offline), boot from cache after 3s
@@ -2753,66 +2873,23 @@ function saveSlideEdit(idx){
   rShop(document.getElementById('root'));
   setTimeout(()=>{heroCarouselInit();_heroIdx=idx;heroUpdateTrack();},50);
 }
-// ── Image compression utility ─────────────────────────────────────────────
-// Resizes to maxPx on the longest side and re-encodes as JPEG at given quality.
-// Returns a Promise<string> (base64 data URL). Falls back to original on error.
-function compressImage(dataUrl, maxPx, quality){
-  return new Promise(resolve=>{
-    const img=new Image();
-    img.onload=()=>{
-      let w=img.naturalWidth, h=img.naturalHeight;
-      if(w>maxPx||h>maxPx){
-        if(w>=h){ h=Math.round(h*maxPx/w); w=maxPx; }
-        else { w=Math.round(w*maxPx/h); h=maxPx; }
-      }
-      const c=document.createElement('canvas');
-      c.width=w; c.height=h;
-      c.getContext('2d').drawImage(img,0,0,w,h);
-      resolve(c.toDataURL('image/jpeg', quality));
-    };
-    img.onerror=()=>resolve(dataUrl);
-    img.src=dataUrl;
-  });
-}
-
-// Returns an instant blob URL from a File for immediate display.
-// Also kicks off background compression+storage and calls onStored(finalSrc)
-// once the compressed base64 is ready to persist.
-function uploadImgInstant(file, maxPx, quality, onStored){
-  const blobUrl = URL.createObjectURL(file);
-  // Background: compress → store → swap to persistent src
-  const rd = new FileReader();
-  rd.onload = async ev => {
-    const compressed = await compressImage(ev.target.result, maxPx, quality);
-    let finalSrc = compressed;
-    if(_fb.uploadImage){
-      const url = await _fb.uploadImage('img/'+Date.now(), compressed);
-      if(url) finalSrc = url;
-    }
-    onStored(finalSrc, blobUrl);
-  };
-  rd.readAsDataURL(file);
-  return blobUrl; // returned synchronously for instant display
-}
-
 function handleSlideImg(e,idx){
   const f=e.target.files[0];if(!f)return;
-  // Show instantly via blob URL
-  const blobUrl=uploadImgInstant(f,1600,0.82,(finalSrc,oldBlob)=>{
-    const slides2=getCarouselSlides().map(s=>({...s}));
-    // Swap blob URL → persistent src silently
-    slides2[idx].bg=finalSrc;
-    db.carouselSlides=slides2;
+  const rd=new FileReader();
+  rd.onload=async ev=>{
+    let src=ev.target.result;
+    if(_fb.uploadImage){
+      const url=await _fb.uploadImage('hero/slide'+idx, src);
+      if(url)src=url;
+    }
+    const slides=getCarouselSlides().map(s=>({...s}));
+    slides[idx].bg=src;
+    db.carouselSlides=slides;
     sv(true);
-    URL.revokeObjectURL(oldBlob);
-    // Patch any live <img> elements showing the blob URL
-    document.querySelectorAll(`img[src="${oldBlob}"]`).forEach(el=>el.src=finalSrc);
-  });
-  const slides=getCarouselSlides().map(s=>({...s}));
-  slides[idx].bg=blobUrl;
-  db.carouselSlides=slides;
-  rShop(document.getElementById('root'));
-  setTimeout(()=>{heroCarouselInit();_heroIdx=idx;heroUpdateTrack();toggleSlideEdit(idx);},50);
+    rShop(document.getElementById('root'));
+    setTimeout(()=>{heroCarouselInit();_heroIdx=idx;heroUpdateTrack();toggleSlideEdit(idx);},50);
+  };
+  rd.readAsDataURL(f);
 }
 function removeSlideImg(idx){
   const slides=getCarouselSlides().map(s=>({...s}));
@@ -2840,13 +2917,17 @@ function saveHeroText(){
 }
 function handleHeroImgInline(e){
   const f=e.target.files[0];if(!f)return;
-  const blobUrl=uploadImgInstant(f,1600,0.82,(finalSrc,oldBlob)=>{
-    db.heroImage=finalSrc;sv(true);
-    URL.revokeObjectURL(oldBlob);
-    document.querySelectorAll(`img[src="${oldBlob}"]`).forEach(el=>el.src=finalSrc);
-  });
-  db.heroImage=blobUrl;sv(true);rShop(document.getElementById('root'));
-  setTimeout(()=>{const p=document.getElementById('hero-edit-panel');if(p)p.style.display='flex';},50);
+  const rd=new FileReader();
+  rd.onload=async ev=>{
+    let src=ev.target.result;
+    if(_fb.uploadImage){
+      const url=await _fb.uploadImage('hero/banner', src);
+      if(url) src=url;
+    }
+    db.heroImage=src;sv(true);rShop(document.getElementById('root'));
+    setTimeout(()=>{const p=document.getElementById('hero-edit-panel');if(p)p.style.display='flex';},50);
+  };
+  rd.readAsDataURL(f);
 }
 function removeHeroImgInline(){db.heroImage='';sv(true);rShop(document.getElementById('root'));setTimeout(()=>{const p=document.getElementById('hero-edit-panel');if(p)p.style.display='flex';},50);}
 function onSearch(val){
@@ -3393,29 +3474,35 @@ function handleProdImgs(e,pfx){
   if(!window[pfx+'imgs'])window[pfx+'imgs']=[];
   const prodIdMatch=pfx.match(/ep(p\d+)-/);
   const prodId=prodIdMatch?prodIdMatch[1]:'new_'+Date.now();
-  function refreshGallery(){
-    const galleryEl=document.getElementById(pfx+'img-gallery');
-    if(galleryEl){
-      const imgs=window[pfx+'imgs'];
-      galleryEl.innerHTML=imgs.map((s,i)=>`<div style="position:relative;display:inline-block">
-        <img src="${s}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:.5px solid var(--color-border-secondary);cursor:pointer" onclick="openCropTool('${pfx}',${i})">
-        <button onclick="removeProdImg('${pfx}',${i})" style="position:absolute;top:-5px;right:-5px;background:#E24B4A;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1">×</button>
-        <div style="font-size:10px;text-align:center;color:var(--color-text-secondary);margin-top:3px">${lang==='en'?'Edit':'編輯'}</div>
-      </div>`).join('');
-    }
-  }
+  let loaded=0;
+  const gallery=document.getElementById(pfx+'img-gallery');
+  if(gallery)gallery.innerHTML=`<div style="font-size:12px;color:var(--color-text-secondary);padding:8px">${lang==='en'?'Uploading…':lang==='zht'?'上傳中…':'上传中…'}</div>`;
   files.forEach((f,fi)=>{
-    // Show instantly via blob URL, compress+store in background
-    const imgIdx=window[pfx+'imgs'].length;
-    const blobUrl=URL.createObjectURL(f);
-    window[pfx+'imgs'].push(blobUrl);
-    refreshGallery();
-    uploadImgInstant(f,1200,0.82,(finalSrc,oldBlob)=>{
-      window[pfx+'imgs'][imgIdx]=finalSrc;
-      refreshGallery();
-      URL.revokeObjectURL(oldBlob);
-      document.querySelectorAll(`img[src="${oldBlob}"]`).forEach(el=>el.src=finalSrc);
-    });
+    const rd=new FileReader();
+    rd.onload=async ev=>{
+      let src=ev.target.result;
+      if(_fb.uploadImage){
+        const idx=(window[pfx+'imgs']||[]).length+fi;
+        const url=await _fb.uploadImage('products/'+prodId+'_'+idx, src);
+        if(url) src=url;
+      }
+      window[pfx+'imgs'].push(src);
+      loaded++;
+      if(loaded===files.length){
+        const imgs=window[pfx+'imgs'];
+        const galleryEl=document.getElementById(pfx+'img-gallery');
+        if(galleryEl){
+          galleryEl.innerHTML=imgs.map((s,i)=>`<div style="position:relative;display:inline-block">
+            <img src="${s}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:.5px solid var(--color-border-secondary);cursor:pointer" onclick="openCropTool('${pfx}',${i})">
+            <button onclick="removeProdImg('${pfx}',${i})" style="position:absolute;top:-5px;right:-5px;background:#E24B4A;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1">×</button>
+            <div style="font-size:10px;text-align:center;color:var(--color-text-secondary);margin-top:3px">${lang==='en'?'Edit':'編輯'}</div>
+          </div>`).join('');
+        } else {
+          rAdmProds(document.getElementById('atc'));
+        }
+      }
+    };
+    rd.readAsDataURL(f);
   });
 }
 function startAddProd(){editingProdId='new';rAdmProds(document.getElementById('atc'));const slot=document.getElementById('prod-add-slot');slot.innerHTML=`<div class="prod-edit-form"><div style="font-size:14px;font-weight:500;margin-bottom:12px">${t('addProductTitle')}</div><div id="add-prod-msg"></div>${prodFormHtml(null,'np-')}<div style="display:flex;gap:8px;margin-top:12px"><button class="btn p sm" onclick="saveNewProd()">${t('saveProduct')}</button><button class="btn sm" onclick="editingProdId=null;rAdmProds(document.getElementById('atc'))">${t('cancel')}</button></div></div>`;slot.scrollIntoView({behavior:'smooth',block:'nearest'});}
@@ -3428,23 +3515,19 @@ function deleteProd(id){db.products=db.products.filter(x=>x.id!==id);sv(true);rA
 function qrUploadHtml(pfx,type,existing){const label=t(type==='alipay'?'alipayQr':'wechatQr');const icon=type==='alipay'?`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="4" fill="#1677FF"/><path d="M4 7h16M4 12h8m-8 5h5" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M14 14s3 1.5 5 2.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>`:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="4" fill="#07C160"/><path d="M8 10c3-4 10-3 10 1 0 2.5-2.5 4-5 3l-3 2 1-2.5C9.5 12.5 8 11.5 8 10z" fill="white"/></svg>`;const imgHtml=existing?`<img src="${existing}" class="qr-preview" style="margin:0 auto 6px;display:block"><div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:6px">${t('replaceQr')}</div>`:`<div style="margin-bottom:6px">${icon}</div><div style="font-size:12px;color:var(--color-text-secondary)">${t('uploadQr')} ${label}</div>`;return `<div><div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:5px;font-weight:500;display:flex;align-items:center;gap:5px">${icon} ${label}</div><label class="qr-upload-box" style="display:block;cursor:pointer">${imgHtml}<input type="file" accept="image/*" style="display:none" onchange="handleQr(event,'${pfx}','${type}')"></label>${existing?`<button class="btn sm d" style="margin-top:4px;width:100%;justify-content:center" onclick="clearQr('${pfx}','${type}')">${t('removeQr')}</button>`:''}</div>`;}
 function handleQr(e,pfx,type){
   const f=e.target.files[0];if(!f)return;
-  const blobUrl=URL.createObjectURL(f);
-  window[pfx+type+'Qr']=blobUrl;
-  const tc=document.getElementById('atc');
-  if(atab==='addref')rAdmAddRef(tc);else rAdmRefs(tc);
-  // Compress + store in background, then swap to persistent src
   const rd=new FileReader();
   rd.onload=async ev=>{
-    const compressed=ev.target.result;
-    let finalSrc=compressed;
+    let src=ev.target.result;
+    // Upload QR image to Storage — only store URL in DB
     if(_fb.uploadImage){
+      const refIdMatch=pfx.match(/nr-|ep(r[^-]+)-/);
       const refSlug=pfx.replace(/[^a-z0-9]/gi,'');
-      const url=await _fb.uploadImage('referrers/'+refSlug+'_'+type, compressed);
-      if(url) finalSrc=url;
+      const url=await _fb.uploadImage('referrers/'+refSlug+'_'+type, src);
+      if(url) src=url;
     }
-    window[pfx+type+'Qr']=finalSrc;
-    URL.revokeObjectURL(blobUrl);
-    document.querySelectorAll(`img[src="${blobUrl}"]`).forEach(el=>el.src=finalSrc);
+    window[pfx+type+'Qr']=src;
+    const tc=document.getElementById('atc');
+    if(atab==='addref')rAdmAddRef(tc);else rAdmRefs(tc);
   };
   rd.readAsDataURL(f);
 }
@@ -3592,19 +3675,17 @@ function saveAdmSlideEdit(idx){
 }
 function handleSlideImgAdm(e,idx){
   const f=e.target.files[0];if(!f)return;
-  const blobUrl=uploadImgInstant(f,1600,0.82,(finalSrc,oldBlob)=>{
-    const slides2=getCarouselSlides().map(s=>({...s}));
-    slides2[idx].bg=finalSrc;
-    db.carouselSlides=slides2;
+  const rd=new FileReader();
+  rd.onload=async ev=>{
+    let src=ev.target.result;
+    if(_fb.uploadImage){const url=await _fb.uploadImage('hero/slide'+idx,src);if(url)src=url;}
+    const slides=getCarouselSlides().map(s=>({...s}));
+    slides[idx].bg=src;
+    db.carouselSlides=slides;
     sv(true);
-    URL.revokeObjectURL(oldBlob);
-    document.querySelectorAll(`img[src="${oldBlob}"]`).forEach(el=>el.src=finalSrc);
-  });
-  const slides=getCarouselSlides().map(s=>({...s}));
-  slides[idx].bg=blobUrl;
-  db.carouselSlides=slides;
-  sv(true);
-  rAdmSettings(document.getElementById('atc'));
+    rAdmSettings(document.getElementById('atc'));
+  };
+  rd.readAsDataURL(f);
 }
 function removeSlideImgAdm(idx){
   const slides=getCarouselSlides().map(s=>({...s}));
@@ -3616,15 +3697,20 @@ function removeSlideImgAdm(idx){
   const f=e.target.files[0];if(!f)return;
   const msg=document.getElementById('hero-img-msg');
   if(msg)msg.innerHTML=`<div class="m" style="color:var(--color-text-secondary)">${lang==='en'?'Uploading…':lang==='zht'?'上傳中…':'上传中…'}</div>`;
-  const blobUrl=uploadImgInstant(f,1600,0.82,(finalSrc,oldBlob)=>{
-    db.heroImage=finalSrc;sv(true);
-    URL.revokeObjectURL(oldBlob);
-    document.querySelectorAll(`img[src="${oldBlob}"]`).forEach(el=>el.src=finalSrc);
-  });
-  db.heroImage=blobUrl;
-  sv(true);
-  if(msg)msg.innerHTML=`<div class="m s">${lang==='en'?'Banner image saved!':lang==='zht'?'橫幅圖片已儲存！':'横幅图片已保存！'}</div>`;
-  rAdmSettings(document.getElementById('atc'));
+  const rd=new FileReader();
+  rd.onload=async ev=>{
+    // Upload to Supabase Storage (not the database) — only a URL is stored in DB
+    if(_fb.uploadImage){
+      const url=await _fb.uploadImage('hero/banner', ev.target.result);
+      db.heroImage = url || ev.target.result; // fallback to base64 if upload fails
+    } else {
+      db.heroImage=ev.target.result;
+    }
+    sv(true);
+    if(msg)msg.innerHTML=`<div class="m s">${lang==='en'?'Banner image saved!':lang==='zht'?'橫幅圖片已儲存！':'横幅图片已保存！'}</div>`;
+    rAdmSettings(document.getElementById('atc'));
+  };
+  rd.readAsDataURL(f);
 }
 function removeHeroImg(){db.heroImage='';sv(true);rAdmSettings(document.getElementById('atc'));}
 function saveHeroTextSettings(){const title=document.getElementById('stg-hero-title')?.value.trim(),sub=document.getElementById('stg-hero-sub')?.value.trim(),msg=document.getElementById('hero-text-msg');if(title!==undefined)db.heroTextTitle=title;if(sub!==undefined)db.heroTextSub=sub;sv(true);if(msg)msg.innerHTML='<div class="m s" style="font-size:12px">'+(lang==='en'?'Text saved!':lang==='zht'?'文字已儲存！':'文字已保存！')+'</div>';setTimeout(()=>{if(msg)msg.innerHTML='';},2000);}function ckAS2(pw){const b=document.getElementById('stg-sb');if(!b)return;if(!pw){b.style.width='0%';return;}let s=0;if(pw.length>=8)s++;if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;b.style.width=['0%','25%','50%','75%','100%'][s];b.style.background=['#E24B4A','#E24B4A','#EF9F27','#7a9c5a','#314021'][s];}
@@ -3634,34 +3720,6 @@ function toggleFeeEdit(){const ed=document.getElementById('fee-edit'),disp=docum
 function saveFeeRate(){const inp=document.getElementById('fee-input'),msg=document.getElementById('fee-msg');const v=parseFloat(inp.value);if(isNaN(v)||v<0||v>100){msg.innerHTML=`<div class="m e" style="font-size:11px;padding:4px 8px">${lang==='en'?'Enter 0–100':(lang==='zht'?'請輸入 0–100':'请输入 0–100')}</div>`;return;}FEE_RATE=parseFloat((v/100).toFixed(6));sv(true);document.getElementById('fee-display').textContent=(v).toFixed(2).replace(/\.?0+$/,'')+'%';document.getElementById('fee-edit').style.display='none';msg.innerHTML='';}
 
 // Boot is handled by _boot() above — triggered once Supabase adapter is ready
-
-// ── Image fade-in: mark images as loaded once they decode ──
-document.addEventListener('DOMContentLoaded', () => {
-  function applyImgFadeIn(root) {
-    root.querySelectorAll('img').forEach(img => {
-      if (img.complete && img.naturalWidth > 0) {
-        img.classList.add('loaded');
-      } else {
-        img.addEventListener('load', () => img.classList.add('loaded'), { once: true });
-      }
-      // Mark blob/data URLs as instantly loaded (no network wait)
-      const src = img.getAttribute('src') || '';
-      if (src.startsWith('blob:') || src.startsWith('data:')) {
-        img.classList.add('loaded');
-      }
-    });
-  }
-  // Watch for new images added dynamically
-  const obs = new MutationObserver(muts => {
-    muts.forEach(m => m.addedNodes.forEach(n => {
-      if (n.nodeType !== 1) return;
-      if (n.tagName === 'IMG') applyImgFadeIn(n.parentElement || document);
-      else if (n.querySelectorAll) applyImgFadeIn(n);
-    }));
-  });
-  obs.observe(document.body, { childList: true, subtree: true });
-  applyImgFadeIn(document);
-});
 </script>
 
 <script>
