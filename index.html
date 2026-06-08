@@ -984,23 +984,36 @@
       }
     }
 
-    // ── onSnapshot(ref, callback) — polling every 30s (replaces Realtime) ───
-    // Only the main shopdata doc is polled; image/text docs are large and
-    // change rarely — they are fetched once at boot, which is sufficient.
+    // ── onSnapshot — poll main doc every 5s; re-fetch allimages when version bumps ──
+    // allimages is large so we only re-fetch it when _imagesVersion changes in the main doc.
     const _pollTimers = {};
+    let _lastImagesVersion = null;
+    let _allImagesCallback = null;
+
     function pgOnSnapshot(ref, callback){
       const key = ref._id;
-      if(_pollTimers[key]) return; // already registered
-      // Fire immediately with current value
+      if(_pollTimers[key]) return;
       pgGetDoc(ref).then(snap=>{ if(snap.exists()) callback(snap); }).catch(()=>{});
-      // Then poll every 30 seconds (only for main doc to detect other-device changes)
       if(key === MAIN_DOC){
         _pollTimers[key] = setInterval(async()=>{
           try{
             const snap = await pgGetDoc(ref);
-            if(snap.exists()) callback(snap);
+            if(!snap.exists()) return;
+            callback(snap);
+            const v = snap.data()._imagesVersion;
+            if(v && v !== _lastImagesVersion){
+              _lastImagesVersion = v;
+              if(_allImagesCallback){
+                try{
+                  const imgSnap = await pgGetDoc({_id:'allimages'});
+                  if(imgSnap.exists()) _allImagesCallback(imgSnap);
+                }catch(e){}
+              }
+            }
           }catch(e){}
-        }, 30000);
+        }, 5000);
+      } else if(key === 'allimages'){
+        _allImagesCallback = callback;
       }
     }
 
@@ -1930,7 +1943,7 @@ function restoreSession(){
 }
 
 const SYNC_KEYS = ['products','referrers','users','adminEmail','adminPassword',
-  'adminCreated','heroTextTitle','heroTextSub','feeRate','carouselSlides'];
+  'adminCreated','heroTextTitle','heroTextSub','feeRate','carouselSlides','_imagesVersion'];
 // Image-only keys stored in a separate Supabase row to keep the main
 // doc small and fast. heroImage + per-product imgs arrays live here.
 const IMG_DOC_KEY = 'netiva_images';
@@ -2067,6 +2080,7 @@ function _scheduleDirtyFlush(delayMs=150){
 // sv(immediate) — updates localStorage instantly, queues DB write
 function sv(immediate=false){
   db.feeRate = FEE_RATE;
+  db._imagesVersion = Date.now().toString(36);
   _mainDirty=true; _imgsDirty=true;
   try{
     localStorage.setItem('netiva_shop', JSON.stringify(db));
