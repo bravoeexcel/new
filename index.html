@@ -1092,18 +1092,18 @@
     <div class="side-tab-divider"></div>
     <!-- Auth area: register + sign-in, or profile when logged in -->
     <div id="stb-auth">
-      <button class="side-tab-btn" id="stb-reg" onclick="go('reg')">
+      <button class="side-tab-btn" id="stb-reg" onclick="openAuthModal('reg')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 3v6M16 6h6"/></svg>
         <span class="side-tab-btn-label" id="stb-reg-lbl">Register</span>
       </button>
-      <button class="side-tab-btn" id="stb-login" onclick="go('login')">
+      <button class="side-tab-btn" id="stb-login" onclick="openAuthModal('login')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         <span class="side-tab-btn-label" id="stb-login-lbl">Sign In</span>
       </button>
     </div>
     <div class="side-tab-divider"></div>
     <!-- Admin -->
-    <button class="side-tab-btn" id="stb-admin" onclick="go('admin-login')">
+    <button class="side-tab-btn" id="stb-admin" onclick="openAdmModal()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="6" r="3"/>
         <path d="M5 21v-2a5 5 0 015-5h4a5 5 0 015 5v2"/>
@@ -1118,7 +1118,7 @@
     <div class="side-tab-login-hint" id="stb-login-hint">
       Log in to explore more content and manage your orders.
     </div>
-    <button class="side-tab-login-btn" id="stb-login-cta" onclick="go('login')">Log In</button>
+    <button class="side-tab-login-btn" id="stb-login-cta" onclick="openAuthModal('login')">Log In</button>
 
   </div>
 </div>
@@ -1171,16 +1171,16 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-5a1 1 0 00-1-1h-4a1 1 0 00-1 1v5H4a1 1 0 01-1-1V10.5z"/></svg>
       <span>Discover</span>
     </button>
-    <button class="mob-dd-item" id="mob-nav-admin" onclick="go('admin-login');closeMobMenu()">
+    <button class="mob-dd-item" id="mob-nav-admin" onclick="openAdmModal();closeMobMenu()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="3"/><path d="M5 21v-2a5 5 0 015-5h4a5 5 0 015 5v2"/><path d="M12 10l-1 3h2l-1 3" stroke-width="1.4"/></svg>
       <span>Admin</span>
     </button>
     <div id="mob-nav-auth">
-      <button class="mob-dd-item" id="mob-nav-reg" onclick="go('reg');closeMobMenu()">
+      <button class="mob-dd-item" id="mob-nav-reg" onclick="openAuthModal('reg');closeMobMenu()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 3v6M16 6h6"/></svg>
         <span>Register</span>
       </button>
-      <button class="mob-dd-item" id="mob-nav-login" onclick="go('login');closeMobMenu()">
+      <button class="mob-dd-item" id="mob-nav-login" onclick="openAuthModal('login');closeMobMenu()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         <span>Sign In</span>
       </button>
@@ -1194,6 +1194,107 @@
 <div id="cart-drawer" class="cart-drawer" style="display:none"></div>
 <div id="pdp" class="pdp"></div>
 <div id="root"></div>
+
+<!-- Admin Login Modal -->
+<div id="adm-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;" onclick="if(event.target===this)closeAdmModal()">
+  <div id="adm-modal-box" style="background:linear-gradient(160deg,#0d1400 0%,#0d1400 100%);border:1px solid rgba(100,160,50,.2);border-radius:18px;width:100%;max-width:400px;padding:2.5rem 2rem 2rem;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.5);margin:1rem;">
+    <button onclick="closeAdmModal()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.08);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,.7);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.15)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg>
+    </button>
+    <div style="margin-bottom:1.75rem">
+      <div style="font-family:var(--font-display);font-size:22px;font-weight:500;color:#fff;letter-spacing:-.3px;margin-bottom:4px">Netiva Admin</div>
+      <div id="adm-modal-sub" style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.5"></div>
+    </div>
+    <div id="adm-modal-content"></div>
+  </div>
+</div>
+<!-- Auth Modal (Login / Register) -->
+<style>
+  #auth-form-scroll::-webkit-scrollbar { width: 5px; }
+  @media (max-width: 640px) {
+    #auth-modal-box { max-width: 100% !important; }
+    #auth-modal-box > div:first-child { display: none !important; }
+  }
+  #auth-form-scroll::-webkit-scrollbar-track { background: transparent; }
+  #auth-form-scroll::-webkit-scrollbar-thumb { background: rgba(165,182,67,.25); border-radius: 4px; }
+  #auth-form-scroll::-webkit-scrollbar-thumb:hover { background: rgba(165,182,67,.45); }
+  #auth-form-scroll { scrollbar-width: thin; scrollbar-color: rgba(165,182,67,.25) transparent; }
+</style>
+<div id="auth-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;" onclick="if(event.target===this)closeAuthModal()">
+  <div id="auth-modal-box" style="display:flex;background:#0d1400;border:1px solid rgba(165,182,67,.2);border-radius:18px;width:100%;max-width:780px;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.5);margin:1rem;max-height:90vh;overflow:hidden;">
+
+    <!-- LEFT: decorative ad panel -->
+    <div style="width:300px;flex-shrink:0;background:linear-gradient(160deg,#0a1000 0%,#1a2b00 60%,#0d1a00 100%);border-radius:17px 0 0 17px;display:flex;flex-direction:column;justify-content:flex-end;padding:2rem 1.75rem;position:relative;overflow:hidden;">
+      <!-- Background botanical SVG art -->
+      <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:.18" viewBox="0 0 300 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <circle cx="150" cy="140" r="180" fill="rgba(165,182,67,.4)"/>
+        <ellipse cx="80" cy="320" rx="60" ry="120" fill="rgba(100,140,20,.5)" transform="rotate(-20 80 320)"/>
+        <ellipse cx="220" cy="280" rx="50" ry="110" fill="rgba(80,120,10,.4)" transform="rotate(15 220 280)"/>
+        <ellipse cx="150" cy="80" rx="40" ry="90" fill="rgba(140,180,30,.35)" transform="rotate(5 150 80)"/>
+        <circle cx="60" cy="160" r="80" fill="rgba(90,130,15,.3)"/>
+        <circle cx="240" cy="380" r="70" fill="rgba(110,150,20,.25)"/>
+      </svg>
+      <!-- Glowing orb -->
+      <div style="position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:220px;height:220px;background:radial-gradient(circle,rgba(165,182,67,.22) 0%,transparent 70%);border-radius:50%;pointer-events:none;"></div>
+      <!-- Leaf illustration -->
+      <svg style="position:absolute;top:30px;right:-10px;opacity:.35" width="160" height="200" viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg">
+        <path d="M80 10 C120 40 140 100 100 160 C80 190 60 190 40 160 C0 100 20 40 80 10Z" fill="rgba(165,182,67,.6)" stroke="rgba(200,220,80,.4)" stroke-width="1"/>
+        <line x1="80" y1="10" x2="80" y2="170" stroke="rgba(200,220,100,.5)" stroke-width="1.5"/>
+        <line x1="80" y1="60" x2="110" y2="80" stroke="rgba(200,220,100,.35)" stroke-width="1"/>
+        <line x1="80" y1="60" x2="50" y2="80" stroke="rgba(200,220,100,.35)" stroke-width="1"/>
+        <line x1="80" y1="100" x2="115" y2="125" stroke="rgba(200,220,100,.3)" stroke-width="1"/>
+        <line x1="80" y1="100" x2="45" y2="125" stroke="rgba(200,220,100,.3)" stroke-width="1"/>
+        <line x1="80" y1="135" x2="105" y2="155" stroke="rgba(200,220,100,.25)" stroke-width="1"/>
+        <line x1="80" y1="135" x2="55" y2="155" stroke="rgba(200,220,100,.25)" stroke-width="1"/>
+      </svg>
+      <svg style="position:absolute;top:120px;left:-15px;opacity:.25" width="120" height="160" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 5 C95 30 108 85 75 130 C60 150 45 150 30 130 C-3 85 10 30 60 5Z" fill="rgba(120,160,40,.7)" stroke="rgba(165,200,60,.4)" stroke-width="1"/>
+        <line x1="60" y1="5" x2="60" y2="140" stroke="rgba(180,220,70,.5)" stroke-width="1.5"/>
+      </svg>
+      <!-- Pill/capsule icon -->
+      <svg style="position:absolute;bottom:140px;right:20px;opacity:.4" width="60" height="26" viewBox="0 0 60 26" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="58" height="24" rx="12" fill="rgba(165,182,67,.2)" stroke="rgba(165,182,67,.6)" stroke-width="1.5"/>
+        <line x1="30" y1="1" x2="30" y2="25" stroke="rgba(165,182,67,.4)" stroke-width="1" stroke-dasharray="3 2"/>
+        <rect x="1" y="1" width="28" height="24" rx="12" fill="rgba(165,182,67,.25)"/>
+      </svg>
+      <!-- Sparkle dots -->
+      <circle cx="40" cy="200" r="3" fill="rgba(165,182,67,.6)" style="position:absolute"/>
+      <svg style="position:absolute;top:200px;left:40px" width="6" height="6"><circle cx="3" cy="3" r="3" fill="rgba(165,182,67,.55)"/></svg>
+      <svg style="position:absolute;top:260px;right:30px" width="5" height="5"><circle cx="2.5" cy="2.5" r="2.5" fill="rgba(165,182,67,.45)"/></svg>
+      <svg style="position:absolute;top:350px;left:25px" width="4" height="4"><circle cx="2" cy="2" r="2" fill="rgba(165,182,67,.4)"/></svg>
+      <!-- Bottom text -->
+      <div style="position:relative;z-index:2">
+        <div style="font-family:var(--font-display);font-size:26px;font-weight:400;color:#fff;line-height:1.2;margin-bottom:10px;letter-spacing:-.3px">Fresh from<br>the source</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:16px">Premium health & wellness products since 1987.</div>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(165,182,67,.15);border:1px solid rgba(165,182,67,.3);border-radius:999px;padding:5px 12px;">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="rgba(165,182,67,.8)" stroke-width="1"/><path d="M3 5l1.5 1.5L7 3.5" stroke="rgba(165,182,67,.8)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span style="font-size:11px;color:rgba(165,182,67,.9);font-weight:500;letter-spacing:.04em">Official Store</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: form panel -->
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+      <!-- Close button -->
+      <button onclick="closeAuthModal()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.08);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,.7);transition:background .15s;z-index:2;" onmouseover="this.style.background='rgba(255,255,255,.15)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg>
+      </button>
+      <!-- Scrollable form area -->
+      <div id="auth-form-scroll" style="flex:1;overflow-y:auto;padding:2.5rem 2rem 2rem;">
+        <!-- Tab switcher -->
+        <div style="display:flex;gap:0;margin-bottom:1.75rem;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:0;">
+          <button id="auth-tab-login" onclick="authShowTab('login')" style="flex:1;background:none;border:none;color:rgba(255,255,255,.5);font-size:14px;font-weight:500;cursor:pointer;padding:0 0 12px;border-bottom:2px solid transparent;transition:all .15s;font-family:var(--font-sans);">Sign In</button>
+          <button id="auth-tab-reg" onclick="authShowTab('reg')" style="flex:1;background:none;border:none;color:rgba(255,255,255,.5);font-size:14px;font-weight:500;cursor:pointer;padding:0 0 12px;border-bottom:2px solid transparent;transition:all .15s;font-family:var(--font-sans);">Register</button>
+        </div>
+        <div id="auth-modal-title" style="font-family:var(--font-display);font-size:22px;font-weight:500;color:#fff;letter-spacing:-.3px;margin-bottom:4px"></div>
+        <div id="auth-modal-sub" style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:1.5rem"></div>
+        <div id="auth-modal-content"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 
 <script>
 let FEE_RATE=0.015;
@@ -1216,7 +1317,7 @@ const T={
   en:{
     shop:'Shop',admin:'Admin',signIn:'Sign In',register:'Register',
     cart:'Cart',myAccount:'My Account',logout:'Sign Out',
-    heroTitle:'Excellence In Action',heroSub:'Since 1987',
+    heroTitle:'Excellence In Action',heroSub:'Netiva',
     shopNow:'Shop Now',registerWithCode:'Register with Referral Code →',
     allCats:'All',pantry:'Pantry',drinks:'Drinks',snacks:'Snacks',fresh:'Fresh',
     addToCart:'Add',noCatProds:'No products in this category',
@@ -1469,7 +1570,7 @@ let db = {...DB_DEFAULTS, products:[...DEFAULT_PRODS]};
 function getCarouselSlides(){
   if(db.carouselSlides&&db.carouselSlides.length===4) return db.carouselSlides;
   return [
-    {badge:'',title_en:'Excellence In Action',title_zh:'追求卓越',title_zht:'追求卓越',sub_en:'Since 1987',sub_zh:'自1987年以来',sub_zht:'自1987年以來',btn_en:'Shop Now',btn_zh:'立即选购',btn_zht:'立即選購',btnAction:'shop',bg:'',theme:'dark'},
+    {badge:'',title_en:'Excellence In Action',title_zh:'追求卓越',title_zht:'追求卓越',sub_en:'Netiva',sub_zh:'Netiva',sub_zht:'Netiva',btn_en:'Shop Now',btn_zh:'立即选购',btn_zht:'立即選購',btnAction:'shop',bg:'',theme:'dark'},
     {badge_en:'WELLNESS',badge_zh:'健康养生',badge_zht:'健康養生',title_en:'Natural & Pure',title_zh:'自然·纯粹',title_zht:'自然·純粹',sub_en:'Premium wellness supplements crafted from nature. Nourish your body, every day.',sub_zh:'精选天然保健品，每天呵护您的身体',sub_zht:'精選天然保健品，每天呵護您的身體',btn_en:'Shop Wellness',btn_zh:'选购保健品',btn_zht:'選購保健品',btnAction:'shop',bg:'',theme:'light'},
     {badge_en:'MEMBERS ONLY',badge_zh:'会员专享',badge_zht:'會員專享',title_en:'Exclusive Member Deals',title_zh:'专属会员优惠',title_zht:'專屬會員優惠',sub_en:'Join today for member-only pricing, priority service, and exclusive rewards.',sub_zh:'立即注册，享受会员专属折扣、优先服务及专属奖励',sub_zht:'立即註冊，享受會員專屬折扣、優先服務及專屬獎勵',btn_en:'Register Free',btn_zh:'免费注册',btn_zht:'免費註冊',btnAction:'reg',bg:'',theme:'dark'},
     {badge_en:'BEAUTY',badge_zh:'美容化妆品',badge_zht:'美容化妝品',title_en:'Premium Skin Care',title_zh:'高级美容护肤品',title_zht:'高級美容護膚品',sub_en:'Discover this premium line of beauty products.',sub_zh:'解锁高级美容护肤品',sub_zht:'解鎖高級美容護膚品',btn_en:'View Offers',btn_zh:'查看特惠',btn_zht:'查看特惠',btnAction:'shop',bg:'',theme:'warm'},
@@ -2660,11 +2761,11 @@ function rNav(){
       const hint=document.getElementById('stb-login-hint');if(hint)hint.style.display='none';
       const cta=document.getElementById('stb-login-cta');if(cta)cta.style.display='none';
     } else {
-      stbAuth.innerHTML=`<button class="side-tab-btn" id="stb-reg" onclick="go('reg')">
+      stbAuth.innerHTML=`<button class="side-tab-btn" id="stb-reg" onclick="openAuthModal('reg')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 3v6M16 6h6"/></svg>
         <span class="side-tab-btn-label" id="stb-reg-lbl">${t('register')}</span>
       </button>
-      <button class="side-tab-btn" id="stb-login" onclick="go('login')">
+      <button class="side-tab-btn" id="stb-login" onclick="openAuthModal('login')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         <span class="side-tab-btn-label" id="stb-login-lbl">${t('signIn')}</span>
       </button>`;
@@ -2688,7 +2789,7 @@ function rNav(){
     if(mobAuth)mobAuth.innerHTML=`<button class="mob-dd-item" onclick="go('acc');closeMobMenu()"><span style="font-size:20px;line-height:1">${db.cur?ava(db.cur):'👤'}</span><span>${t('myAccount')}</span></button><button class="mob-dd-item" onclick="db.cur=null;cart=[];saveSession();rNav();go('shop');closeMobMenu()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><span>${t('logout')}</span></button>`;
   }else{
     nr.innerHTML=adminBtn;
-    if(mobAuth)mobAuth.innerHTML=`<button class="mob-dd-item" id="mob-nav-reg" onclick="go('reg');closeMobMenu()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 3v6M16 6h6"/></svg><span>${t('register')}</span></button><button class="mob-dd-item" id="mob-nav-login" onclick="go('login');closeMobMenu()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><span>${t('signIn')}</span></button>`;
+    if(mobAuth)mobAuth.innerHTML=`<button class="mob-dd-item" id="mob-nav-reg" onclick="openAuthModal('reg');closeMobMenu()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 3v6M16 6h6"/></svg><span>${t('register')}</span></button><button class="mob-dd-item" id="mob-nav-login" onclick="openAuthModal('login');closeMobMenu()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><span>${t('signIn')}</span></button>`;
   }
 }
 
@@ -2704,7 +2805,7 @@ function _updateNavTheme(v){
     nav.style.boxShadow='none';
   }
 }
-function go(v){vw=v;closeCart();editingRefId=null;editingProdId=null;if(v!=='shop'&&typeof heroPause==='function')heroPause();if(v==='shop'){selectedVariants={};searchQuery='';selectedCat='';currentPage=1;visibleCount=10;document.onkeydown=null;}
+function go(v){if(v==='admin-login'){openAdmModal();return;}if(v==='login'){openAuthModal('login');return;}if(v==='reg'){openAuthModal('reg');return;}vw=v;closeCart();editingRefId=null;editingProdId=null;if(v!=='shop'&&typeof heroPause==='function')heroPause();if(v==='shop'){selectedVariants={};searchQuery='';selectedCat='';currentPage=1;visibleCount=10;document.onkeydown=null;}
   // Hide/show pdp vs root
   const pdpEl=document.getElementById('pdp');const rootEl=document.getElementById('root');
   if(v.startsWith('pdp:')){
@@ -2719,7 +2820,7 @@ function go(v){vw=v;closeCart();editingRefId=null;editingProdId=null;if(v!=='sho
   render();}
 function render(){
   const r=document.getElementById('root');
-  const _formViews=['reg','login','acc','admin-login','checkout'];
+  const _formViews=['acc','checkout'];
   if(_formViews.includes(vw)&&r.querySelector('#rc,#le,#en,#a-email,#c-name,#c-email')){return;}
   if(vw==='shop')rShop(r);else if(vw==='checkout')rCheckout(r);else if(vw==='reg')rReg(r);else if(vw==='login')rLogin(r);else if(vw==='acc')rAcc(r);else if(vw==='admin-login')rAdmLogin(r);else if(vw==='admin')rAdm(r);
   else if(vw.startsWith('pdp:')){const id=vw.slice(4);rPDP(id);}
@@ -2730,7 +2831,7 @@ function rShop(r){
   const heroClass=heroImg?'hero':'hero no-img';
   const heroBg=heroImg?`<img class="hero-bg" src="${heroImg}" alt=""><div class="hero-overlay"></div>`:'';
   const heroTitle=db.heroTextTitle||(lang==='zh'?'追求卓越':lang==='zht'?'追求卓越':'Excellence In Action');
-  const heroSub=db.heroTextSub||(lang==='zh'?'自1987年以来':lang==='zht'?'自1987年以來':'Since 1987');
+  const heroSub=db.heroTextSub||(lang==='zh'?'自1987年以来':lang==='zht'?'自1987年以來':'Netiva');
   const adminHeroBar=db.adm?`<div id="hero-admin-bar" style="position:absolute;top:10px;right:10px;z-index:10;display:flex;gap:6px">
     <button class="btn sm" style="background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-color:rgba(0,0,0,.12);font-size:12px;display:flex;align-items:center;gap:4px" onclick="toggleHeroEdit()">
       <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 2l2 2-7 7H3v-2L10 2z"/></svg>
@@ -3188,14 +3289,73 @@ function orderDone(totalCny,totUsd){
   document.getElementById('root').innerHTML=`<div style="max-width:420px;margin:4rem auto;padding:0 1.5rem;text-align:center"><div style="font-size:44px;margin-bottom:1rem">🎉</div><div style="font-size:20px;font-weight:500;margin-bottom:8px">${t('thankYou')}</div><div style="font-size:14px;color:var(--color-text-secondary);margin-bottom:1.5rem;line-height:1.7">${t('thankYouSub')}</div><div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:16px;font-size:13px;margin-bottom:1.5rem"><div style="display:flex;justify-content:space-between;color:var(--color-text-secondary);margin-bottom:6px"><span>${t('subtotal')}</span><span>¥${(totalCny/(1+FEE_RATE)).toFixed(2)}</span></div><div style="display:flex;justify-content:space-between;color:#854F0B;margin-bottom:8px;padding-bottom:8px;border-bottom:.5px solid var(--color-border-tertiary)"><span>${t('fee')} (1.5%)</span><span>¥${(totalCny-totalCny/(1+FEE_RATE)).toFixed(2)}</span></div><div style="display:flex;justify-content:space-between;font-weight:500;font-size:15px"><span>${t('total')}</span><span>¥${totalCny.toFixed(2)}</span></div></div><button class="btn p" style="width:100%;justify-content:center;padding:10px" onclick="go('shop')">${t('backToShopBtn')}</button></div>`;
 }
 
-function rReg(r){
-  r.innerHTML=`<div class="ov"><div class="mod"><h2>${t('register')}</h2><div class="msub">${lang==='en'?'You need a referral code from an existing member to register.':(lang==='zht'?'您需要推薦人提供的推薦碼才能註冊。':'您需要推荐人提供的推荐码才能注册。')}</div><div id="rm"></div><div class="fl"><label>${t('referralCode')} <span style="color:#A32D2D">*</span></label><input type="text" id="rc" placeholder="${t('referralCodePlaceholder')}" style="text-transform:uppercase;font-family:var(--font-mono)" oninput="ckRC()"><div id="rch" style="font-size:12px;margin-top:5px;min-height:16px"></div></div><div id="rf" style="opacity:.4;pointer-events:none;transition:opacity .2s"><div class="dv"></div><div class="g2" style="margin-bottom:10px"><div><label style="display:block;font-size:12px;color:var(--color-text-secondary);margin-bottom:4px">${t('firstName')}</label><input type="text" id="rfn"></div><div><label style="display:block;font-size:12px;color:var(--color-text-secondary);margin-bottom:4px">${t('lastName')}</label><input type="text" id="rln"></div></div><div class="fl"><label>${t('email')}</label><input type="email" id="re"></div><div class="fl"><label>${t('password')}</label><input type="password" id="rp" oninput="ckS(this.value)"><div class="sb" id="sb" style="width:0%;background:#E24B4A"></div></div><div class="fl"><label>${t('confirmPassword')}</label><input type="password" id="rp2"></div></div><button class="btn p" style="width:100%;justify-content:center;padding:10px;margin-top:4px" onclick="doReg()">${t('createAccount')}</button><div class="sw">${t('alreadyHave')} <a onclick="go('login')">${t('signInHere')}</a></div></div></div>`;
+// ── Auth modal (login + register) ─────────────────────────────────────────
+const _authInputStyle='width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;font-size:14px;color:#fff;font-family:var(--font-sans);outline:none;transition:border-color .15s;';
+const _authLabelStyle='display:block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:6px;';
+const _authBtnStyle='width:100%;padding:13px;background:#A5B643;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.02em;transition:background .15s;';
+
+function openAuthModal(tab){
+  const overlay=document.getElementById('auth-modal-overlay');
+  if(!overlay)return;
+  overlay.style.display='flex';
+  authShowTab(tab||'login');
+  setTimeout(()=>{const e=document.getElementById('le')||document.getElementById('rc');if(e)e.focus();},80);
 }
+function closeAuthModal(){
+  const overlay=document.getElementById('auth-modal-overlay');
+  if(overlay)overlay.style.display='none';
+  if(vw==='login'||vw==='reg'){vw='shop';}
+}
+function authShowTab(tab){
+  const tl=document.getElementById('auth-tab-login');
+  const tr=document.getElementById('auth-tab-reg');
+  const title=document.getElementById('auth-modal-title');
+  const sub=document.getElementById('auth-modal-sub');
+  const content=document.getElementById('auth-modal-content');
+  const activeStyle='color:#fff;border-bottom-color:#A5B643;';
+  const inactiveStyle='color:rgba(255,255,255,.45);border-bottom-color:transparent;';
+  if(tl)tl.style.cssText=tl.style.cssText.replace(/color:[^;]+;border-bottom-color:[^;]+;/,'')+( tab==='login'?activeStyle:inactiveStyle);
+  if(tr)tr.style.cssText=tr.style.cssText.replace(/color:[^;]+;border-bottom-color:[^;]+;/,'')+( tab==='reg'?activeStyle:inactiveStyle);
+
+  if(tab==='login'){
+    if(title)title.textContent=t('signIn');
+    if(sub)sub.textContent=t('welcomeBack');
+    content.innerHTML=`
+      <div id="lm" style="margin-bottom:8px"></div>
+      <div style="margin-bottom:14px"><label style="${_authLabelStyle}">${t('email')}</label><input type="email" id="le" style="${_authInputStyle}" onkeydown="if(event.key==='Enter')doLogin()" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"></div>
+      <div style="margin-bottom:20px"><label style="${_authLabelStyle}">${t('password')}</label><div style="position:relative"><input type="password" id="lp" onkeydown="if(event.key==='Enter')doLogin()" style="${_authInputStyle}padding-right:42px" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"><button type="button" onclick="toggleAuthPw('lp',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);padding:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+      <button onclick="doLogin()" style="${_authBtnStyle}" onmouseover="this.style.background='#8a9938'" onmouseout="this.style.background='#A5B643'">${t('signInBtn')}</button>
+      <div style="text-align:center;margin-top:14px;font-size:12px;color:rgba(255,255,255,.4)">${t('noAccount')} <a onclick="authShowTab('reg')" style="color:#A5B643;cursor:pointer;text-decoration:underline;font-weight:500">${t('registerHere')}</a></div>`;
+    setTimeout(()=>{const e=document.getElementById('le');if(e)e.focus();},50);
+  } else {
+    if(title)title.textContent=t('register');
+    if(sub)sub.textContent=lang==='en'?'You need a referral code from an existing member to register.':(lang==='zht'?'您需要推薦人提供的推薦碼才能註冊。':'您需要推荐人提供的推荐码才能注册。');
+    content.innerHTML=`
+      <div id="rm" style="margin-bottom:8px"></div>
+      <div style="margin-bottom:14px"><label style="${_authLabelStyle}">${t('referralCode')} <span style="color:#e87575">*</span></label><input type="text" id="rc" placeholder="${t('referralCodePlaceholder')}" style="${_authInputStyle}text-transform:uppercase;font-family:var(--font-mono)" oninput="ckRC()" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"><div id="rch" style="font-size:12px;margin-top:5px;min-height:16px"></div></div>
+      <div id="rf" style="opacity:.4;pointer-events:none;transition:opacity .2s">
+        <div style="height:1px;background:rgba(255,255,255,.1);margin:4px 0 16px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div><label style="${_authLabelStyle}">${t('firstName')}</label><input type="text" id="rfn" style="${_authInputStyle}" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"></div>
+          <div><label style="${_authLabelStyle}">${t('lastName')}</label><input type="text" id="rln" style="${_authInputStyle}" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"></div>
+        </div>
+        <div style="margin-bottom:14px"><label style="${_authLabelStyle}">${t('email')}</label><input type="email" id="re" style="${_authInputStyle}" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"></div>
+        <div style="margin-bottom:14px"><label style="${_authLabelStyle}">${t('password')}</label><div style="position:relative"><input type="password" id="rp" oninput="ckS(this.value)" style="${_authInputStyle}padding-right:42px" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"><button type="button" onclick="toggleAuthPw('rp',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);padding:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div class="sb" id="sb" style="width:0%;background:#E24B4A;margin-top:6px"></div></div>
+        <div style="margin-bottom:20px"><label style="${_authLabelStyle}">${t('confirmPassword')}</label><input type="password" id="rp2" style="${_authInputStyle}" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"></div>
+      </div>
+      <button onclick="doReg()" style="${_authBtnStyle}" onmouseover="this.style.background='#8a9938'" onmouseout="this.style.background='#A5B643'">${t('createAccount')}</button>
+      <div style="text-align:center;margin-top:14px;font-size:12px;color:rgba(255,255,255,.4)">${t('alreadyHave')} <a onclick="authShowTab('login')" style="color:#A5B643;cursor:pointer;text-decoration:underline;font-weight:500">${t('signInHere')}</a></div>`;
+    setTimeout(()=>{const e=document.getElementById('rc');if(e)e.focus();},50);
+  }
+}
+function toggleAuthPw(id,btn){const inp=document.getElementById(id);if(!inp)return;inp.type=inp.type==='password'?'text':'password';}
+function rReg(r){ openAuthModal('reg'); }
+function rLogin(r){ openAuthModal('login'); }
 function ckRC(){const v=document.getElementById('rc').value.trim().toUpperCase(),h=document.getElementById('rch'),f=document.getElementById('rf');if(!v){h.textContent='';f.style.opacity='.4';f.style.pointerEvents='none';return;}const ref=refByCode(v);if(ref){h.style.color='#185FA5';h.innerHTML=`<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M2 6l3 3 5-5" stroke="#185FA5" stroke-width="1.5" stroke-linecap="round"/></svg>${t('validCode')} <strong>${ref.name}</strong>`;f.style.opacity='1';f.style.pointerEvents='auto';}else{h.style.color='#A32D2D';h.innerHTML=`<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M3 3l6 6M9 3l-6 6" stroke="#A32D2D" stroke-width="1.5" stroke-linecap="round"/></svg>${t('invalidCode')}`;f.style.opacity='.4';f.style.pointerEvents='none';}}
 function ckS(pw){const b=document.getElementById('sb');if(!b)return;let s=0;if(pw.length>=8)s++;if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;b.style.width=['0%','25%','50%','75%','100%'][s];b.style.background=['#E24B4A','#E24B4A','#EF9F27','#7a9c5a','#314021'][s];}
-function doReg(){const code=document.getElementById('rc').value.trim().toUpperCase(),fn=document.getElementById('rfn').value.trim(),ln=document.getElementById('rln').value.trim(),em=document.getElementById('re').value.trim().toLowerCase(),pw=document.getElementById('rp').value,pw2=document.getElementById('rp2').value,msg=document.getElementById('rm');const ref=refByCode(code);if(!ref){msg.innerHTML=`<div class="m e">${t('errorInvalidCode')}</div>`;return;}if(!fn||!ln||!em||!pw||!pw2){msg.innerHTML=`<div class="m e">${t('errorFillAll')}</div>`;return;}if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){msg.innerHTML=`<div class="m e">${t('errorEmail')}</div>`;return;}if(pw.length<8){msg.innerHTML=`<div class="m e">${t('errorPassLen')}</div>`;return;}if(pw!==pw2){msg.innerHTML=`<div class="m e">${t('errorPassMatch')}</div>`;return;}if(db.users.find(u=>u.email===em)){msg.innerHTML=`<div class="m e">${t('errorEmailTaken')}</div>`;return;}const _foodEmojis=['🍎','🍏','🍊','🍋','🍋‍🟩','🍇','🍓','🫐','🍑','🍒','🥭','🍍','🥝','🍅','🍈','🍌','🍐','🍉','🥥','🥑','🥕','🌽','🥦','🥔','🫑','🥬','🥒','🌶️','🫛','🥗','🍠','🍳','🥚','🫚','🥘','🍲','🫕','🍵','☕'];const _emoji=_foodEmojis[Math.floor(Math.random()*_foodEmojis.length)];const u={id:'u'+Date.now(),name:fn+' '+ln,email:em,pass:pw,referrerId:ref.id,referrerName:ref.name,joined:new Date().toLocaleDateString(),orders:0,emoji:_emoji};db.users.push(u);db.cur=u;sv(true);saveSession();msg.innerHTML=`<div class="m s">${lang==='en'?'Account created! Welcome to Netiva.':(lang==='zht'?'帳戶建立成功！歡迎加入 Netiva。':'账户创建成功！欢迎加入 Netiva。')}</div>`;setTimeout(()=>go('shop'),900);}
-function rLogin(r){r.innerHTML=`<div class="ov"><div class="mod"><h2>${t('signIn')}</h2><div class="msub">${t('welcomeBack')}</div><div id="lm"></div><div class="fl"><label>${t('email')}</label><input type="email" id="le"></div><div class="fl"><label>${t('password')}</label><input type="password" id="lp" onkeydown="if(event.key==='Enter')doLogin()"></div><button class="btn p" style="width:100%;justify-content:center;padding:10px" onclick="doLogin()">${t('signInBtn')}</button><div class="sw">${t('noAccount')} <a onclick="go('reg')">${t('registerHere')}</a></div></div></div>`;}
-function doLogin(){const em=document.getElementById('le').value.trim().toLowerCase(),pw=document.getElementById('lp').value,msg=document.getElementById('lm');if(!em||!pw){msg.innerHTML=`<div class="m e">${t('errorFillAll')}</div>`;return;}const u=db.users.find(u=>u.email===em&&u.pass===pw);if(!u){msg.innerHTML=`<div class="m e">${lang==='en'?'Incorrect email or password.':(lang==='zht'?'電子郵件或密碼不正確。':'邮箱或密码不正确。')}</div>`;return;}db.cur=u;sv();saveSession();msg.innerHTML=`<div class="m s">${lang==='en'?'Welcome back, '+u.name.split(' ')[0]+'!':(lang==='zht'?'歡迎回來，'+u.name.split(' ')[0]+'！':'欢迎回来，'+u.name.split(' ')[0]+'！')}</div>`;setTimeout(()=>go('shop'),700);}
+function doReg(){const code=document.getElementById('rc').value.trim().toUpperCase(),fn=document.getElementById('rfn').value.trim(),ln=document.getElementById('rln').value.trim(),em=document.getElementById('re').value.trim().toLowerCase(),pw=document.getElementById('rp').value,pw2=document.getElementById('rp2').value,msg=document.getElementById('rm');const ref=refByCode(code);if(!ref){msg.innerHTML=`<div class="m e">${t('errorInvalidCode')}</div>`;return;}if(!fn||!ln||!em||!pw||!pw2){msg.innerHTML=`<div class="m e">${t('errorFillAll')}</div>`;return;}if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){msg.innerHTML=`<div class="m e">${t('errorEmail')}</div>`;return;}if(pw.length<8){msg.innerHTML=`<div class="m e">${t('errorPassLen')}</div>`;return;}if(pw!==pw2){msg.innerHTML=`<div class="m e">${t('errorPassMatch')}</div>`;return;}if(db.users.find(u=>u.email===em)){msg.innerHTML=`<div class="m e">${t('errorEmailTaken')}</div>`;return;}const _foodEmojis=['🍎','🍏','🍊','🍋','🍋‍🟩','🍇','🍓','🫐','🍑','🍒','🥭','🍍','🥝','🍅','🍈','🍌','🍐','🍉','🥥','🥑','🥕','🌽','🥦','🥔','🫑','🥬','🥒','🌶️','🫛','🥗','🍠','🍳','🥚','🫚','🥘','🍲','🫕','🍵','☕'];const _emoji=_foodEmojis[Math.floor(Math.random()*_foodEmojis.length)];const u={id:'u'+Date.now(),name:fn+' '+ln,email:em,pass:pw,referrerId:ref.id,referrerName:ref.name,joined:new Date().toLocaleDateString(),orders:0,emoji:_emoji};db.users.push(u);db.cur=u;sv(true);saveSession();msg.innerHTML=`<div class="m s">${lang==='en'?'Account created! Welcome to Netiva.':(lang==='zht'?'帳戶建立成功！歡迎加入 Netiva。':'账户创建成功！欢迎加入 Netiva。')}</div>`;setTimeout(()=>{closeAuthModal();go('shop');},900);}
+
+function doLogin(){const em=document.getElementById('le').value.trim().toLowerCase(),pw=document.getElementById('lp').value,msg=document.getElementById('lm');if(!em||!pw){msg.innerHTML=`<div class="m e">${t('errorFillAll')}</div>`;return;}const u=db.users.find(u=>u.email===em&&u.pass===pw);if(!u){msg.innerHTML=`<div class="m e">${lang==='en'?'Incorrect email or password.':(lang==='zht'?'電子郵件或密碼不正確。':'邮箱或密码不正确。')}</div>`;return;}db.cur=u;sv();saveSession();msg.innerHTML=`<div class="m s">${lang==='en'?'Welcome back, '+u.name.split(' ')[0]+'!':(lang==='zht'?'歡迎回來，'+u.name.split(' ')[0]+'！':'欢迎回来，'+u.name.split(' ')[0]+'！')}</div>`;setTimeout(()=>{closeAuthModal();go('shop');},700);}
 function rAcc(r){if(!db.cur){go('login');return;}const u=db.cur;
 const _allEmojis=['🍎','🍏','🍊','🍋','🍋‍🟩','🍇','🍓','🫐','🍑','🍒','🥭','🍍','🥝','🍅','🍈','🍌','🍐','🍉','🥥','🥑','🥕','🌽','🥦','🥔','🫑','🥬','🥒','🌶️','🫛','🥗','🍠','🍳','🥚','🫚','🥘','🍲','🫕','🍵','☕'];
 r.innerHTML=`<div class="pg">
@@ -3250,18 +3410,53 @@ function selectEmoji(emoji){db.cur.emoji=emoji;const i=db.users.findIndex(u=>u.i
 function saveA(){const n=document.getElementById('en').value.trim(),e=document.getElementById('ee').value.trim().toLowerCase(),msg=document.getElementById('em');if(!n||!e){msg.innerHTML=`<div class="m e">${t('errorFillAll')}</div>`;return;}db.cur.name=n;db.cur.email=e;const i=db.users.findIndex(u=>u.id===db.cur.id);if(i>-1)db.users[i]=db.cur;sv(true);rNav();msg.innerHTML=`<div class="m s">${t('saved')}</div>`;}
 function doLO(){db.cur=null;cart=[];try{localStorage.removeItem('netiva_session');}catch(e){}sv();rNav();go('shop');}
 
-function rAdmLogin(r){
-  // Only show setup if NO admin has EVER been created
+function openAdmModal(){
+  // If already logged in admin, go straight to admin panel
+  if(db.adm){go('admin');return;}
+  const overlay=document.getElementById('adm-modal-overlay');
+  const sub=document.getElementById('adm-modal-sub');
+  const content=document.getElementById('adm-modal-content');
+  if(!overlay)return;
+
+  const inputStyle='width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;font-size:14px;color:#fff;font-family:var(--font-sans);outline:none;transition:border-color .15s;';
+  const labelStyle='display:block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:6px;';
+  const pwToggleBtn='<button type="button" onclick="toggleAdmPw()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);padding:0;" id="adm-pw-toggle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>';
+
   if(!db.adminPassword && !db.adminCreated){
-    r.innerHTML=`<div class="ov"><div class="mod"><h2>${t('setupAdmin')}</h2><div class="msub">${t('setupAdminSub')}</div><div id="alm"></div><div class="fl"><label>${t('adminEmail')}</label><input type="email" id="a-email" placeholder="${t('adminEmailPlaceholder')}"></div><div class="fl"><label>${t('adminPassword')}</label><input type="password" id="a-pw" oninput="ckAS(this.value)"><div class="sb" id="a-sb" style="width:0%;background:#E24B4A"></div></div><div class="fl"><label>${t('confirmPassword')}</label><input type="password" id="a-pw2"></div><button class="btn p" style="width:100%;justify-content:center;padding:10px;margin-top:4px" onclick="doAdmSetup()">${t('createAdminBtn')}</button><div class="sw"><a onclick="go('shop')">${t('backToShop')}</a></div></div></div>`;
-    return;
+    // First-time setup
+    sub.textContent=lang==='en'?'Create your admin account to get started.':lang==='zht'?'建立管理員帳戶以開始使用。':'创建管理员账户以开始使用。';
+    content.innerHTML=`
+      <div id="alm" style="margin-bottom:8px"></div>
+      <div style="margin-bottom:14px"><label style="${labelStyle}">${t('adminEmail')}</label><input type="email" id="a-email" placeholder="${t('adminEmailPlaceholder')}" style="${inputStyle}" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"></div>
+      <div style="margin-bottom:14px"><label style="${labelStyle}">${t('adminPassword')}</label><div style="position:relative"><input type="password" id="a-pw" oninput="ckAS(this.value)" style="${inputStyle};padding-right:42px" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">${pwToggleBtn}</div><div class="sb" id="a-sb" style="width:0%;background:#E24B4A;margin-top:6px"></div></div>
+      <div style="margin-bottom:20px"><label style="${labelStyle}">${t('confirmPassword')}</label><input type="password" id="a-pw2" style="${inputStyle}" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"></div>
+      <button onclick="doAdmSetup()" style="width:100%;padding:13px;background:#A5B643;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.02em;transition:background .15s;" onmouseover="this.style.background='#8a9938'" onmouseout="this.style.background='#A5B643'">${t('createAdminBtn')}</button>`;
+  } else {
+    sub.textContent=lang==='en'?'Sign in to access the admin panel.':lang==='zht'?'登入以存取管理後台。':'登录以访问管理后台。';
+    content.innerHTML=`
+      <div id="alm" style="margin-bottom:8px"></div>
+      <div style="margin-bottom:14px"><label style="${labelStyle}">${t('adminEmail')}</label><input type="email" id="a-email" placeholder="${t('adminEmailPlaceholder')}" style="${inputStyle}" onkeydown="if(event.key==='Enter')doAdm()" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"></div>
+      <div style="margin-bottom:20px"><label style="${labelStyle}">${t('adminPassword')}</label><div style="position:relative"><input type="password" id="a-pw" onkeydown="if(event.key==='Enter')doAdm()" style="${inputStyle};padding-right:42px" onfocus="this.style.borderColor='#A5B643'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">${pwToggleBtn}</div></div>
+      <button onclick="doAdm()" style="width:100%;padding:13px;background:#A5B643;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.02em;transition:background .15s;" onmouseover="this.style.background='#8a9938'" onmouseout="this.style.background='#A5B643'">${t('enterAdmin')}</button>`;
   }
-  // If adminCreated is set but password is missing (shouldn't happen), show locked message
-  if(db.adminCreated && !db.adminPassword){
-    r.innerHTML=`<div class="ov"><div class="mod"><h2>${t('adminPanel')}</h2><div class="m e" style="margin-bottom:12px">${lang==='en'?'Admin account already exists. Please sign in.':lang==='zht'?'管理員帳戶已存在，請登入。':'管理员账户已存在，请登录。'}</div><div id="alm"></div><div class="fl"><label>${t('adminEmail')}</label><input type="email" id="a-email" placeholder="${t('adminEmailPlaceholder')}" onkeydown="if(event.key==='Enter')doAdm()"></div><div class="fl"><label>${t('adminPassword')}</label><input type="password" id="a-pw" onkeydown="if(event.key==='Enter')doAdm()"></div><button class="btn p" style="width:100%;justify-content:center;padding:10px" onclick="doAdm()">${t('enterAdmin')}</button><div class="sw"><a onclick="go('shop')">${t('backToShop')}</a></div></div></div>`;
-    return;
-  }
-  r.innerHTML=`<div class="ov"><div class="mod"><h2>${t('adminPanel')}</h2><div class="msub">${t('adminOnly')}</div><div id="alm"></div><div class="fl"><label>${t('adminEmail')}</label><input type="email" id="a-email" placeholder="${t('adminEmailPlaceholder')}" onkeydown="if(event.key==='Enter')doAdm()"></div><div class="fl"><label>${t('adminPassword')}</label><input type="password" id="a-pw" onkeydown="if(event.key==='Enter')doAdm()"></div><button class="btn p" style="width:100%;justify-content:center;padding:10px" onclick="doAdm()">${t('enterAdmin')}</button><div class="sw"><a onclick="go('shop')">${t('backToShop')}</a></div></div></div>`;
+
+  overlay.style.display='flex';
+  setTimeout(()=>{const e=document.getElementById('a-email');if(e)e.focus();},80);
+}
+function closeAdmModal(){
+  const overlay=document.getElementById('adm-modal-overlay');
+  if(overlay)overlay.style.display='none';
+  // Restore view state — don't navigate, just close
+  if(vw==='admin-login'){vw='shop';}
+}
+function toggleAdmPw(){
+  const inp=document.getElementById('a-pw');
+  if(!inp)return;
+  inp.type=inp.type==='password'?'text':'password';
+}
+function rAdmLogin(r){
+  // This is now handled by the modal; if called directly, just open the modal
+  openAdmModal();
 }
 function ckAS(pw){const b=document.getElementById('a-sb');if(!b)return;let s=0;if(pw.length>=8)s++;if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;b.style.width=['0%','25%','50%','75%','100%'][s];b.style.background=['#E24B4A','#E24B4A','#EF9F27','#7a9c5a','#314021'][s];}
 function doAdmSetup(){
@@ -3269,9 +3464,9 @@ function doAdmSetup(){
   if(db.adminCreated){const msg=document.getElementById('alm');if(msg)msg.innerHTML=`<div class="m e">${lang==='en'?'An admin account has already been created.':lang==='zht'?'管理員帳戶已建立。':'管理员账户已创建。'}</div>`;return;}
   const em=document.getElementById('a-email').value.trim().toLowerCase(),pw=document.getElementById('a-pw').value,pw2=document.getElementById('a-pw2').value,msg=document.getElementById('alm');
   if(!em){msg.innerHTML=`<div class="m e">${t('errorEmailRequired')}</div>`;return;}if(pw.length<8){msg.innerHTML=`<div class="m e">${t('errorPassShort')}</div>`;return;}if(pw!==pw2){msg.innerHTML=`<div class="m e">${t('errorPassMismatch')}</div>`;return;}
-  db.adminEmail=em;db.adminPassword=pw;db.adminCreated=true;db.adm=true;sv();go('admin');
+  db.adminEmail=em;db.adminPassword=pw;db.adminCreated=true;db.adm=true;sv();closeAdmModal();go('admin');
 }
-function doAdm(){const em=document.getElementById('a-email').value.trim().toLowerCase(),pw=document.getElementById('a-pw').value,msg=document.getElementById('alm');if(em===db.adminEmail&&pw===db.adminPassword){db.adm=true;sv();go('admin');}else msg.innerHTML=`<div class="m e">${t('wrongPassword')}</div>`;}
+function doAdm(){const em=document.getElementById('a-email').value.trim().toLowerCase(),pw=document.getElementById('a-pw').value,msg=document.getElementById('alm');if(em===db.adminEmail&&pw===db.adminPassword){db.adm=true;sv();closeAdmModal();go('admin');}else if(msg)msg.innerHTML=`<div class="m e">${t('wrongPassword')}</div>`;}
 
 let atab='products';
 function rAdm(r){
