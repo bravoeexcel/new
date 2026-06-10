@@ -2444,6 +2444,9 @@ let selectedVariants={};
 // Search query state
 let searchQuery='';
 let selectedCat='';
+let currentPage=1;
+const PRODUCTS_PER_PAGE=10;
+let visibleCount=10;
 
 let cart=[],editingRefId=null,editingProdId=null;
 
@@ -2701,7 +2704,7 @@ function _updateNavTheme(v){
     nav.style.boxShadow='none';
   }
 }
-function go(v){vw=v;closeCart();editingRefId=null;editingProdId=null;if(v!=='shop'&&typeof heroPause==='function')heroPause();if(v==='shop'){selectedVariants={};searchQuery='';selectedCat='';document.onkeydown=null;}
+function go(v){vw=v;closeCart();editingRefId=null;editingProdId=null;if(v!=='shop'&&typeof heroPause==='function')heroPause();if(v==='shop'){selectedVariants={};searchQuery='';selectedCat='';currentPage=1;document.onkeydown=null;}
   // Hide/show pdp vs root
   const pdpEl=document.getElementById('pdp');const rootEl=document.getElementById('root');
   if(v.startsWith('pdp:')){
@@ -2932,16 +2935,18 @@ function handleHeroImgInline(e){
 function removeHeroImgInline(){db.heroImage='';sv(true);rShop(document.getElementById('root'));setTimeout(()=>{const p=document.getElementById('hero-edit-panel');if(p)p.style.display='flex';},50);}
 function onSearch(val){
   searchQuery=val;
+  currentPage=1;visibleCount=10;
   const inp=document.getElementById('search-input');if(inp&&inp.value!==val)inp.value=val;
   const clr=document.getElementById('search-clear');if(clr)clr.style.display=val?'flex':'none';
   rShopProducts();
 }
 function onCat(id){
   selectedCat=id;
-  // update pill active states
+  currentPage=1;visibleCount=10;
   document.querySelectorAll('.cat-pill').forEach(b=>b.classList.toggle('on',b.getAttribute('onclick')===`onCat('${id}')`||(id===''&&b.getAttribute('onclick')==="onCat('')")));
   rShopProducts();
 }
+function goToPage(n){currentPage=n;rShopProducts();const grid=document.getElementById('mp');if(grid)grid.scrollIntoView({behavior:'smooth',block:'start'});}
 function rShopProducts(){
   const grid=document.getElementById('mp');if(!grid)return;
   const q=searchQuery.trim().toLowerCase();
@@ -2951,13 +2956,15 @@ function rShopProducts(){
     if(!q)return true;
     return (p.name_en||'').toLowerCase().includes(q)||(p.name_zh||'').toLowerCase().includes(q)||(p.name_zht||'').toLowerCase().includes(q)||(p.tag_en||'').toLowerCase().includes(q)||(p.tag_zh||'').toLowerCase().includes(q)||(p.category||'').toLowerCase().includes(q);
   });
-  grid.innerHTML=filtered.length===0?`<div style="grid-column:1/-1;text-align:center;color:var(--color-text-secondary);padding:3rem;font-size:13px">${q?(lang==='zh'||lang==='zht'?'未找到相关商品':'No products match your search'):t('noCatProds')}</div>`:filtered.map(p=>{
+  const totalPages=Math.max(1,Math.ceil(filtered.length/PRODUCTS_PER_PAGE));
+  if(currentPage>totalPages)currentPage=totalPages;
+  const pageProds=filtered.slice((currentPage-1)*PRODUCTS_PER_PAGE, currentPage*PRODUCTS_PER_PAGE);
+  const cardsHtml=pageProds.length===0?`<div style="grid-column:1/-1;text-align:center;color:var(--color-text-secondary);padding:3rem;font-size:13px">${q?(lang==='zh'||lang==='zht'?'未找到相关商品':'No products match your search'):t('noCatProds')}</div>`:pageProds.map(p=>{
     const vs=p.variants||[];
     const selVid=selectedVariants[p.id]||(vs.length?vs[0].id:'');
     const selV=vs.find(v=>v.id===selVid)||vs[0]||null;
     const price=vPrice(p,selV);
     const varHtml=vs.length>1?`<div class="vsel" id="vs-${p.id}">${vs.map(v=>`<button class="vpill${v.id===selVid?' on':''}" onclick="event.stopPropagation();selVar('${p.id}','${v.id}')">${vName(v)}</button>`).join('')}</div>`:(vs.length===1?`<div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:5px">${vName(vs[0])}</div>`:'');
-    // Build image list: imgs array (multi) or fallback to single img
     const imgs=getAllImgs(p);
     const hasImgs=imgs.length>0;
     let mediaHtml;
@@ -2970,8 +2977,41 @@ function rShopProducts(){
     }
     return `<div class="pc" onclick="viewProduct('${p.id}')">${mediaHtml}<div class="pb">${pTag(p)?`<span class="tag">${pTag(p)}</span>`:''}<div class="pn">${pName(p)}</div><div class="pd">${pDesc(p)}</div>${varHtml}<div class="pf"><div><div class="price-cny" data-usd="${price}" id="pc-price-${p.id}">${cny(price)}</div><div class="price-usd">$${price.toFixed(2)} USD</div></div></div></div></div>`;
   }).join('');
+  // Build pagination controls
+  let paginationHtml='';
+  if(totalPages>1){
+    const prevDisabled=currentPage<=1;
+    const nextDisabled=currentPage>=totalPages;
+    // Generate page number buttons (show up to 7 pages with ellipsis)
+    let pages=[];
+    if(totalPages<=7){for(let i=1;i<=totalPages;i++)pages.push(i);}
+    else{
+      pages=[1];
+      if(currentPage>3)pages.push('…');
+      const lo=Math.max(2,currentPage-1),hi=Math.min(totalPages-1,currentPage+1);
+      for(let i=lo;i<=hi;i++)pages.push(i);
+      if(currentPage<totalPages-2)pages.push('…');
+      pages.push(totalPages);
+    }
+    const pageButtons=pages.map(p=>{
+      if(p==='…')return `<span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;font-size:13px;color:var(--color-text-tertiary)">…</span>`;
+      const on=p===currentPage;
+      return `<button onclick="goToPage(${p})" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1px solid ${on?'transparent':'var(--color-border-secondary)'};background:${on?'var(--color-accent)':'#fff'};color:${on?'#fff':'var(--color-text-primary)'};font-size:13px;font-weight:${on?'600':'400'};cursor:pointer;transition:all .15s;">${p}</button>`;
+    }).join('');
+    paginationHtml=`<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:6px;padding:1.5rem 0 0.5rem;flex-wrap:wrap;">
+      <button onclick="goToPage(${currentPage-1})" ${prevDisabled?'disabled':''} style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1px solid var(--color-border-secondary);background:#fff;cursor:${prevDisabled?'not-allowed':'pointer'};opacity:${prevDisabled?'.35':'1'};transition:all .15s;">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2L4 6.5 8 11"/></svg>
+      </button>
+      ${pageButtons}
+      <button onclick="goToPage(${currentPage+1})" ${nextDisabled?'disabled':''} style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1px solid var(--color-border-secondary);background:#fff;cursor:${nextDisabled?'not-allowed':'pointer'};opacity:${nextDisabled?'.35':'1'};transition:all .15s;">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 2l4 4.5-4 4.5"/></svg>
+      </button>
+      <span style="font-size:12px;color:var(--color-text-tertiary);margin-left:6px">${lang==='zh'||lang==='zht'?`第 ${currentPage} / ${totalPages} 页 · 共 ${filtered.length} 件`:`Page ${currentPage} of ${totalPages} · ${filtered.length} items`}</span>
+    </div>`;
+  }
+  grid.innerHTML=cardsHtml+paginationHtml;
   // init card img indices
-  filtered.forEach(p=>{if(!cardImgIdx[p.id])cardImgIdx[p.id]=0;});
+  pageProds.forEach(p=>{if(!cardImgIdx[p.id])cardImgIdx[p.id]=0;});
 }
 let cardImgIdx={};
 function getAllImgs(p){
