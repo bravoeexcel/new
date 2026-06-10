@@ -2946,10 +2946,7 @@ function onCat(id){
   document.querySelectorAll('.cat-pill').forEach(b=>b.classList.toggle('on',b.getAttribute('onclick')===`onCat('${id}')`||(id===''&&b.getAttribute('onclick')==="onCat('')")));
   rShopProducts();
 }
-// _filteredProds holds the current filtered list so showMore can reference it
 let _filteredProds=[];
-// _loadBatchToken prevents stale async batches from a previous render from landing
-let _loadToken=0;
 
 function _buildCardHtml(p){
   const vs=p.variants||[];
@@ -2958,78 +2955,48 @@ function _buildCardHtml(p){
   const price=vPrice(p,selV);
   const varHtml=vs.length>1?`<div class="vsel" id="vs-${p.id}">${vs.map(v=>`<button class="vpill${v.id===selVid?' on':''}" onclick="event.stopPropagation();selVar('${p.id}','${v.id}')">${vName(v)}</button>`).join('')}</div>`:(vs.length===1?`<div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:5px">${vName(vs[0])}</div>`:'');
   const imgs=getAllImgs(p);
-  const hasImgs=imgs.length>0;
   let mediaHtml;
-  if(hasImgs){
+  if(imgs.length){
     const dots=imgs.length>1?`<div class="pi-dots" id="pidots-${p.id}">${imgs.map((_,i)=>`<button class="pi-dot${i===0?' on':''}" onclick="event.stopPropagation();cardSlide('${p.id}',${i})"></button>`).join('')}</div>`:'';
     const navBtns=imgs.length>1?`<button class="pi-nav left" onclick="event.stopPropagation();cardSlide('${p.id}',-1,true)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7.5 2L4 6l3.5 4"/></svg></button><button class="pi-nav right" onclick="event.stopPropagation();cardSlide('${p.id}',1,true)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4.5 2L8 6l-3.5 4"/></svg></button>`:'';
     mediaHtml=`<div class="pi" id="pi-${p.id}"><img src="${imgs[0]}" id="pi-img-${p.id}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">${navBtns}${dots}<button class="pi-expand" onclick="event.stopPropagation();viewProduct('${p.id}')"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1h4M1 1v4M13 1h-4M13 1v4M1 13h4M1 13v-4M13 13h-4M13 13v-4"/></svg></button></div>`;
   } else {
     mediaHtml=`<div class="pi" id="pi-${p.id}">${p.icon||'📦'}<button class="pi-expand" onclick="event.stopPropagation();viewProduct('${p.id}')"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1h4M1 1v4M13 1h-4M13 1v4M1 13h4M1 13v-4M13 13h-4M13 13v-4"/></svg></button></div>`;
   }
-  return `<div class="pc" onclick="viewProduct('${p.id}')" style="opacity:0;transform:translateY(12px);transition:opacity .3s ease,transform .3s ease">${mediaHtml}<div class="pb">${pTag(p)?`<span class="tag">${pTag(p)}</span>`:''}<div class="pn">${pName(p)}</div><div class="pd">${pDesc(p)}</div>${varHtml}<div class="pf"><div><div class="price-cny" data-usd="${price}" id="pc-price-${p.id}">${cny(price)}</div><div class="price-usd">$${price.toFixed(2)} USD</div></div></div></div></div>`;
+  return `<div class="pc" onclick="viewProduct('${p.id}')">${mediaHtml}<div class="pb">${pTag(p)?`<span class="tag">${pTag(p)}</span>`:''}<div class="pn">${pName(p)}</div><div class="pd">${pDesc(p)}</div>${varHtml}<div class="pf"><div><div class="price-cny" data-usd="${price}" id="pc-price-${p.id}">${cny(price)}</div><div class="price-usd">$${price.toFixed(2)} USD</div></div></div></div></div>`;
 }
 
-function _updateFooter(shown, total){
+function _renderFooter(){
+  const shown=visibleCount;
+  const total=_filteredProds.length;
+  const hasMore=shown<total;
   const footer=document.getElementById('mp-footer');
   if(!footer)return;
-  const hasMore=shown<total;
   footer.innerHTML=`
-    <div style="font-size:12px;color:var(--color-text-tertiary)">${lang==='zh'||lang==='zht'?`已显示 ${shown} / 共 ${total} 件商品`:`Showing ${shown} of ${total} products`}</div>
-    ${hasMore?`<button id="show-more-btn" onclick="showMore()" style="display:inline-flex;align-items:center;gap:8px;padding:11px 32px;background:#111;color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
-      ${lang==='zh'||lang==='zht'?'显示更多':'SHOW MORE'}
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l4 4 4-4"/></svg>
-    </button>`:''}`;
-}
-
-// Stagger-animate cards that were just inserted (opacity 0 → 1)
-function _animateCards(els){
-  els.forEach((el,i)=>setTimeout(()=>{el.style.opacity='1';el.style.transform='translateY(0)';},i*40));
-}
-
-// Append a batch of product cards to the grid with a stagger animation
-function _appendBatch(prods, token){
-  const grid=document.getElementById('mp');
-  if(!grid||token!==_loadToken)return;
-  const frag=document.createDocumentFragment();
-  const newEls=[];
-  prods.forEach(p=>{
-    if(!cardImgIdx[p.id])cardImgIdx[p.id]=0;
-    const div=document.createElement('div');
-    div.innerHTML=_buildCardHtml(p);
-    const card=div.firstElementChild;
-    frag.appendChild(card);
-    newEls.push(card);
-  });
-  // Insert before footer
-  const footer=document.getElementById('mp-footer');
-  if(footer)grid.insertBefore(frag,footer);else grid.appendChild(frag);
-  // Animate after paint
-  requestAnimationFrame(()=>_animateCards(newEls));
+    <div style="font-size:12px;color:var(--color-text-tertiary);margin-bottom:${hasMore?'10':'0'}px">${lang==='zh'||lang==='zht'?`已显示 ${shown} / 共 ${total} 件商品`:`Showing ${shown} of ${total} products`}</div>
+    ${hasMore?`<button onclick="showMore()" style="display:inline-flex;align-items:center;gap:8px;padding:11px 32px;background:#111;color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;transition:opacity .15s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">${lang==='zh'||lang==='zht'?'显示更多':'SHOW MORE'} <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l4 4 4-4"/></svg></button>`:''}`;
 }
 
 function showMore(){
   const grid=document.getElementById('mp');if(!grid)return;
-  const prevShown=visibleCount;
-  visibleCount=Math.min(visibleCount+10, _filteredProds.length);
-  const batch=_filteredProds.slice(prevShown, visibleCount);
-  const token=_loadToken;
-  // Disable button while loading
-  const btn=document.getElementById('show-more-btn');
-  if(btn){btn.disabled=true;btn.style.opacity='.5';btn.textContent=lang==='zh'||lang==='zht'?'加载中…':'Loading…';}
-  setTimeout(()=>{
-    _appendBatch(batch, token);
-    _updateFooter(visibleCount, _filteredProds.length);
-  }, 80);
+  const from=visibleCount;
+  visibleCount=Math.min(visibleCount+10,_filteredProds.length);
+  const batch=_filteredProds.slice(from,visibleCount);
+  const footer=document.getElementById('mp-footer');
+  const frag=document.createDocumentFragment();
+  batch.forEach(p=>{
+    cardImgIdx[p.id]=0;
+    const wrap=document.createElement('div');
+    wrap.innerHTML=_buildCardHtml(p);
+    frag.appendChild(wrap.firstElementChild);
+  });
+  if(footer)grid.insertBefore(frag,footer);else grid.appendChild(frag);
+  _renderFooter();
 }
 
 function rShopProducts(){
   const grid=document.getElementById('mp');if(!grid)return;
-  // Invalidate any in-flight progressive loads
-  _loadToken++;
-  const token=_loadToken;
   visibleCount=10;
-
   const q=searchQuery.trim().toLowerCase();
   _filteredProds=db.products.filter(p=>{
     if(!p.active)return false;
@@ -3037,38 +3004,14 @@ function rShopProducts(){
     if(!q)return true;
     return (p.name_en||'').toLowerCase().includes(q)||(p.name_zh||'').toLowerCase().includes(q)||(p.name_zht||'').toLowerCase().includes(q)||(p.tag_en||'').toLowerCase().includes(q)||(p.tag_zh||'').toLowerCase().includes(q)||(p.category||'').toLowerCase().includes(q);
   });
-
   const total=_filteredProds.length;
-
   if(total===0){
     grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;color:var(--color-text-secondary);padding:3rem;font-size:13px">${q?(lang==='zh'||lang==='zht'?'未找到相关商品':'No products match your search'):t('noCatProds')}</div>`;
     return;
   }
-
-  // Render skeleton footer placeholder immediately so footer is always present
-  grid.innerHTML=`<div id="mp-footer" style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:2rem 0 1rem;"></div>`;
-
-  // First batch: insert synchronously so first 10 appear instantly
-  const firstBatch=_filteredProds.slice(0,Math.min(10,total));
-  _appendBatch(firstBatch, token);
-  visibleCount=firstBatch.length;
-  _updateFooter(visibleCount, total);
-
-  // Remaining batches: load progressively in background, one batch every ~300ms
-  if(total>10){
-    let offset=10;
-    function loadNext(){
-      if(token!==_loadToken)return; // stale — stop
-      if(offset>=total)return;
-      const batch=_filteredProds.slice(offset, offset+10);
-      offset+=10;
-      _appendBatch(batch, token);
-      visibleCount=Math.min(offset, total);
-      _updateFooter(visibleCount, total);
-      if(offset<total)setTimeout(loadNext, 350);
-    }
-    setTimeout(loadNext, 350);
-  }
+  const first=_filteredProds.slice(0,Math.min(10,total));
+  grid.innerHTML=first.map(p=>{cardImgIdx[p.id]=0;return _buildCardHtml(p);}).join('')+`<div id="mp-footer" style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:0;padding:2rem 0 1rem;"></div>`;
+  _renderFooter();
 }
 let cardImgIdx={};
 function getAllImgs(p){
